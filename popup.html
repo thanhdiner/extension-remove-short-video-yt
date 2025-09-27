@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Hide Shorts</title>
+    <style>
+      body { font-family: system-ui, sans-serif; padding: 12px; width: 240px; }
+      .row { display: flex; justify-content: space-between; align-items: center; margin: 8px 0; }
+      select, button { font: inherit; }
+      small { color: #666; }
+    </style>
+  </head>
+  <body>
+    <h3 style="margin:0 0 8px;">Hide YouTube Shorts</h3>
+    <div class="row">
+      <span>Bật ẩn Shorts</span>
+      <label>
+        <input type="checkbox" id="toggleEnabled" />
+      </label>
+    </div>
+
+    <div class="row">
+      <span>Đi vào /shorts/ thì</span>
+      <select id="redirectMode">
+        <option value="block">Chặn (về Home)</option>
+        <option value="watch">Chuyển sang /watch?v=...</option>
+      </select>
+    </div>
+
+    <div class="row" style="justify-content:flex-end;">
+      <button id="apply">Áp dụng</button>
+    </div>
+
+    <small>
+      Mẹo: nếu YouTube đổi DOM, bật/tắt lại để refresh observer.  
+    </small>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

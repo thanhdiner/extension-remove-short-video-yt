@@ -1,0 +1,27 @@
+/* Ẩn mọi block Shorts “thô bạo” bằng CSS (nhanh & rẻ) */
+ytd-reel-shelf-renderer,
+ytd-reel-video-renderer,
+ytd-rich-section-renderer[is-shorts],
+ytd-reel-shelf-surface-renderer,
+a[href*="/shorts/"],
+ytd-grid-playlist-renderer[is-shorts],
+ytd-reel-shelf-renderer + ytd-continuation-item-renderer {
+  display: none !important;
+}
+
+/* Trong trang kết quả tìm kiếm và sidebar gợi ý */
+#related ytd-compact-video-renderer a[href*="/shorts/"] {
+  display: none !important;
+}
+
+/* Nút Shorts ở sidebar trái */
+#endpoint[title="Shorts"],
+ytd-mini-guide-entry-renderer[aria-label="Shorts"] {
+  display: none !important;
+}
+
+/* Trang chủ “Shorts” module (đời mới) */
+ytd-rich-shelf-renderer[is-shorts],
+ytd-rich-item-renderer[mini-mode][is-shorts] {
+  display: none !important;
+}

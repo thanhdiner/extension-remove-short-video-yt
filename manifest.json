@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Hide YouTube Shorts",
+  "version": "1.0.0",
+  "description": "Ẩn toàn bộ YouTube Shorts và chặn các URL /shorts/.",
+  "icons": {
+    "16": "icon16.png",
+    "32": "icon32.png",
+    "128": "icon128.png"
+  },
+  "permissions": ["storage", "declarativeNetRequest", "tabs", "scripting"],
+  "host_permissions": ["*://www.youtube.com/*", "*://m.youtube.com/*"],
+  "action": {
+    "default_title": "Hide Shorts",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://www.youtube.com/*", "*://m.youtube.com/*"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "declarative_net_request": {
+    "rule_resources": []
+  }
+}

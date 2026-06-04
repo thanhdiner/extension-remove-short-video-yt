@@ -4,21 +4,21 @@ Chrome Extension giúp bạn ẩn hoàn toàn sự xuất hiện của YouTube S
 
 ---
 
-## 🌟 Các tính năng chính (Features)
+## Các tính năng chính (Features)
 
-### 1. 🚫 Dọn dẹp & Ẩn YouTube Shorts hoàn toàn
+### 1. Dọn dẹp & Ẩn YouTube Shorts hoàn toàn
 * **Trang chủ (Homepage):** Ẩn hoàn toàn kệ Shorts (Shorts shelf).
 * **Kết quả tìm kiếm (Search Results):** Ẩn toàn bộ thanh Shorts và các video ngắn lọt trong danh sách tìm kiếm, không để lại khoảng trống hay thông tin rác (views, nút ba chấm, show more).
 * **Thanh bên (Sidebar):** Loại bỏ nút "Shorts" trên cả thanh bên chính (Sidebar) lẫn thanh bên dạng thu nhỏ (Mini-sidebar).
 * **Trang lịch sử & Kênh (History & Channel Pages):** Ẩn nút lọc "Shorts" ở đầu trang Lịch sử xem (Watch History) và tab "Shorts" trên các trang kênh của creator.
 
-### 2. 🔄 Chuyển hướng URL thông minh (Redirect URL)
+### 2. Chuyển hướng URL thông minh (Redirect URL)
 * Tự động phát hiện khi bạn truy cập trực tiếp vào liên kết Shorts (`youtube.com/shorts/...`).
 * Cấu hình trực tiếp từ Popup Extension:
   * **Block (Mặc định):** Chuyển hướng bạn quay trở lại trang chủ YouTube.
   * **Watch:** Tự động chuyển đổi giao diện xem Shorts thành giao diện trình phát thông thường (`youtube.com/watch?v=...`) để xem thoải mái hơn.
 
-### 3. ⚡ Phím tắt chỉnh tốc độ phát (Video Speed Controller)
+### 3. Phím tắt chỉnh tốc độ phát (Video Speed Controller)
 * Nhấn phím **`-` (Trừ)** để giảm tốc độ phát đi `0.1x` (Tối thiểu `0.1x`).
 * Nhấn phím **`=` (Bằng)** để tăng tốc độ phát thêm `0.1x` (Tối đa `16.0x`).
 * **Lưu tốc độ phát (Speed Persistence):** Extension tự động ghi nhớ tốc độ bạn đang nghe để áp dụng tiếp cho video tiếp theo hoặc khi tải lại trang mà không cần chỉnh lại từ đầu.
@@ -28,7 +28,7 @@ Chrome Extension giúp bạn ẩn hoàn toàn sự xuất hiện của YouTube S
 
 ---
 
-## ⌨️ Bảng phím tắt (Keyboard Shortcuts)
+## Bảng phím tắt (Keyboard Shortcuts)
 
 | Phím tắt | Chức năng | Ghi chú |
 | :--- | :--- | :--- |
@@ -39,7 +39,7 @@ Chrome Extension giúp bạn ẩn hoàn toàn sự xuất hiện của YouTube S
 
 ---
 
-## 🛠️ Hướng dẫn cài đặt thủ công (Installation)
+## Hướng dẫn cài đặt thủ công (Installation)
 
 Do đây là extension tùy chỉnh (chưa được đưa lên Chrome Web Store), bạn có thể cài đặt thủ công bằng các bước sau:
 

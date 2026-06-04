@@ -375,9 +375,10 @@ function handleYouTubeNonStop() {
   document.addEventListener('yt-popup-opened', e => {
     getSettings().then(settings => {
       if (!settings.enabled) return
-      const nodeName = e.detail?.nodeName || ''
-      if (nodeName === 'YT-CONFIRM-DIALOG-RENDERER' || nodeName === 'YTMUSIC-YOU-THERE-RENDERER') {
-        const confirmButton = document.querySelector('ytd-popup-container #confirm-button, ytmusic-popup-container #confirm-button, #confirm-button')
+      // Tránh đọc e.detail vì Chrome có thể chặn (null) do cơ chế bảo mật cô lập (isolated world)
+      const popup = document.querySelector('yt-confirm-dialog-renderer, ytmusic-you-there-renderer')
+      if (popup) {
+        const confirmButton = popup.querySelector('#confirm-button')
         if (confirmButton) {
           confirmButton.click()
           const video = document.querySelector('video')

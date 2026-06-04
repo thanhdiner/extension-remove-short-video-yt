@@ -371,19 +371,32 @@ document.addEventListener('keydown', e => {
 
 // ============ CORE: YOUTUBE NONSTOP (AUTO RESUME) ============
 function handleYouTubeNonStop() {
+  console.log('[Hide YouTube Shorts] Khởi tạo bộ lắng nghe NonStop thành công.')
+
   // Đề phòng khi video bị tạm dừng do hộp thoại xác nhận đang chờ sẵn (chạy ở Isolated World)
   document.addEventListener('pause', e => {
     if (e.target.tagName === 'VIDEO') {
+      console.log('[Hide YouTube Shorts] Phát hiện sự kiện video pause.')
       const video = e.target
       getSettings().then(settings => {
+        console.log('[Hide YouTube Shorts] Đã đọc settings:', settings)
         if (!settings.enabled) return
         setTimeout(() => {
           const popup = document.querySelector('yt-confirm-dialog-renderer, ytmusic-you-there-renderer')
+          console.log('[Hide YouTube Shorts] Tìm kiếm popup trong DOM:', popup)
           if (popup) {
-            const confirmButton = popup.querySelector('#confirm-button')
+            // Tìm nút confirm trong cả Light DOM lẫn Shadow DOM của Web Component
+            let confirmButton = popup.querySelector('#confirm-button')
+            if (!confirmButton && popup.shadowRoot) {
+              confirmButton = popup.shadowRoot.querySelector('#confirm-button')
+            }
+            console.log('[Hide YouTube Shorts] Tìm thấy nút xác nhận:', confirmButton)
             if (confirmButton) {
+              console.log('[Hide YouTube Shorts] Đang tự động click nút xác nhận để xem tiếp.')
               confirmButton.click()
-              video.play().catch(() => {})
+              video.play().catch(err => {
+                console.log('[Hide YouTube Shorts] Lỗi tự động phát lại:', err)
+              })
             }
           }
         }, 150)
@@ -394,6 +407,7 @@ function handleYouTubeNonStop() {
 
 // ============ BOOT ============
 ;(async () => {
+  console.log('[Hide YouTube Shorts] Extension đang khởi động...')
   await applySettingsClass()
   await handleShortsRedirect()
   await startObserver()

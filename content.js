@@ -183,6 +183,192 @@ chrome.runtime.onMessage.addListener(msg => {
   }
 })
 
+// ============ CORE: VIDEO SPEED CONTROL ============
+function showSpeedIndicator(video, speed) {
+  const player = video.closest('#movie_player') || video.parentElement
+  if (!player) return
+
+  let indicator = player.querySelector('.hys-speed-indicator')
+  if (!indicator) {
+    indicator = document.createElement('div')
+    indicator.className = 'hys-speed-indicator'
+    Object.assign(indicator.style, {
+      position: 'absolute',
+      top: '60px',
+      left: '50%',
+      transform: 'translate(-50%, 0)',
+      backgroundColor: 'rgba(28, 28, 28, 0.85)',
+      backdropFilter: 'blur(8px)',
+      color: '#fff',
+      padding: '8px 16px',
+      borderRadius: '20px',
+      fontSize: '14px',
+      fontWeight: '600',
+      zIndex: '2000',
+      pointerEvents: 'none',
+      transition: 'opacity 0.25s ease, transform 0.25s ease',
+      opacity: '0',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+      border: '1px solid rgba(255,255,255,0.1)',
+      fontFamily: 'Roboto, Arial, sans-serif'
+    })
+    player.appendChild(indicator)
+  }
+
+  indicator.textContent = `Speed: ${speed.toFixed(1)}x`
+  indicator.style.opacity = '1'
+  indicator.style.transform = 'translate(-50%, 0)'
+
+  if (indicator.timeoutId) {
+    clearTimeout(indicator.timeoutId)
+  }
+
+  indicator.timeoutId = setTimeout(() => {
+    indicator.style.opacity = '0'
+    indicator.style.transform = 'translate(-50%, -8px)'
+  }, 1000)
+}
+
+// ============ CORE: PERSISTENT PLAYBACK RATE ============
+let persistedSpeed = 1.0
+let shouldForcePersistedSpeed = false
+let isApplyingSpeed = false
+
+// Đọc tốc độ đã lưu lúc khởi động
+getSettings().then(settings => {
+  if (settings.userSpeed) {
+    persistedSpeed = settings.userSpeed
+  }
+})
+
+// Lắng nghe sự kiện nạp video mới (loadedmetadata)
+document.addEventListener('loadedmetadata', e => {
+  if (e.target.tagName === 'VIDEO') {
+    shouldForcePersistedSpeed = true
+    applyPersistedSpeed(e.target)
+  }
+}, true)
+
+// Lắng nghe sự kiện bắt đầu chạy video
+document.addEventListener('play', e => {
+  if (e.target.tagName === 'VIDEO') {
+    applyPersistedSpeed(e.target)
+  }
+}, true)
+
+// Hàm áp dụng tốc độ phát
+function applyPersistedSpeed(video) {
+  if (isApplyingSpeed) return
+  getSettings().then(settings => {
+    if (settings.enabled && settings.userSpeed) {
+      const targetSpeed = settings.userSpeed
+      if (video.playbackRate !== targetSpeed) {
+        isApplyingSpeed = true
+        video.playbackRate = targetSpeed
+        isApplyingSpeed = false
+      }
+    }
+  })
+}
+
+// Lắng nghe thay đổi tốc độ phát (nhận diện đổi video hoặc người dùng tự đổi từ bánh răng YouTube)
+document.addEventListener('ratechange', e => {
+  if (e.target.tagName === 'VIDEO') {
+    const video = e.target
+    if (isApplyingSpeed) return
+
+    if (shouldForcePersistedSpeed) {
+      // Nếu YouTube tự reset tốc độ về 1.0 khi chuyển video, ép về tốc độ đã lưu
+      getSettings().then(settings => {
+        if (settings.enabled && settings.userSpeed) {
+          const targetSpeed = settings.userSpeed
+          if (video.playbackRate !== targetSpeed) {
+            isApplyingSpeed = true
+            video.playbackRate = targetSpeed
+            isApplyingSpeed = false
+          }
+        }
+        shouldForcePersistedSpeed = false
+      })
+    } else {
+      // Nếu người dùng chủ động đổi tốc độ bằng menu bánh răng YouTube, lưu lại tốc độ mới
+      const currentSpeed = video.playbackRate
+      setSettings({ userSpeed: currentSpeed })
+    }
+  }
+}, true)
+
+document.addEventListener('keydown', e => {
+  // Bỏ qua nếu sự kiện được giả lập từ chính extension
+  if (e.hys_bypassed) return
+
+  const active = document.activeElement
+  if (active && (
+    active.tagName === 'INPUT' ||
+    active.tagName === 'TEXTAREA' ||
+    active.isContentEditable
+  )) {
+    return
+  }
+
+  // 1) Xử lý Shift + '-' hoặc Shift + '=' để tăng/giảm cỡ chữ phụ đề YouTube
+  const isShiftMinus = e.key === '_' || (e.key === '-' && e.shiftKey)
+  const isShiftEqual = e.key === '+' || (e.key === '=' && e.shiftKey)
+
+  if (isShiftMinus || isShiftEqual) {
+    e.preventDefault()
+    e.stopPropagation()
+    e.stopImmediatePropagation()
+
+    const targetKey = isShiftMinus ? '-' : '='
+    const targetCode = isShiftMinus ? 'Minus' : 'Equal'
+    const targetKeyCode = isShiftMinus ? 189 : 187
+
+    const syntheticEvent = new KeyboardEvent('keydown', {
+      key: targetKey,
+      code: targetCode,
+      keyCode: targetKeyCode,
+      which: targetKeyCode,
+      bubbles: true,
+      cancelable: true,
+      view: window,
+      shiftKey: false
+    })
+
+    Object.defineProperty(syntheticEvent, 'hys_bypassed', { value: true })
+    const target = document.activeElement || document
+    target.dispatchEvent(syntheticEvent)
+    return
+  }
+
+  // 2) Xử lý phím '-' và '=' (không bấm Shift) để tăng/giảm tốc độ video
+  if (e.key === '-' || e.key === '=') {
+    const video = document.querySelector('video')
+    if (!video) return
+
+    e.preventDefault()
+    e.stopPropagation()
+    e.stopImmediatePropagation()
+
+    let currentSpeed = video.playbackRate
+
+    if (e.key === '-') {
+      currentSpeed = Math.round((currentSpeed - 0.1) * 10) / 10
+      if (currentSpeed < 0.1) currentSpeed = 0.1
+    } else {
+      currentSpeed = Math.round((currentSpeed + 0.1) * 10) / 10
+      if (currentSpeed > 16.0) currentSpeed = 16.0
+    }
+
+    isApplyingSpeed = true
+    video.playbackRate = currentSpeed
+    isApplyingSpeed = false
+    
+    setSettings({ userSpeed: currentSpeed })
+    showSpeedIndicator(video, currentSpeed)
+  }
+}, true) // Sử dụng capture phase để chạy trước trình lắng nghe mặc định của YouTube
+
 // ============ BOOT ============
 ;(async () => {
   await applySettingsClass()

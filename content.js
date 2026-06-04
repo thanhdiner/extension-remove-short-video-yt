@@ -371,26 +371,31 @@ document.addEventListener('keydown', e => {
 
 // ============ CORE: YOUTUBE NONSTOP (AUTO RESUME) ============
 function handleYouTubeNonStop() {
-  // 1) Khi hộp thoại xác nhận được mở ra
-  document.addEventListener('yt-popup-opened', e => {
-    getSettings().then(settings => {
-      if (!settings.enabled) return
-      // Tránh đọc e.detail vì Chrome có thể chặn (null) do cơ chế bảo mật cô lập (isolated world)
-      const popup = document.querySelector('yt-confirm-dialog-renderer, ytmusic-you-there-renderer')
-      if (popup) {
-        const confirmButton = popup.querySelector('#confirm-button')
-        if (confirmButton) {
-          confirmButton.click()
-          const video = document.querySelector('video')
-          if (video && video.paused) {
-            video.play().catch(() => {})
+  const script = document.createElement('script')
+  script.textContent = `
+    (function() {
+      // 1) Lắng nghe sự kiện mở popup tại môi trường Page Context (MAIN World) để nhận được e.detail
+      document.addEventListener('yt-popup-opened', e => {
+        if (document.documentElement.classList.contains('hys-disabled')) return
+        
+        const nodeName = e.detail?.nodeName || ''
+        if (nodeName === 'YT-CONFIRM-DIALOG-RENDERER' || nodeName === 'YTMUSIC-YOU-THERE-RENDERER') {
+          const confirmButton = document.querySelector('ytd-popup-container #confirm-button, ytmusic-popup-container #confirm-button, #confirm-button')
+          if (confirmButton) {
+            confirmButton.click()
+            const video = document.querySelector('video')
+            if (video && video.paused) {
+              video.play().catch(() => {})
+            }
           }
         }
-      }
-    })
-  }, true)
+      }, true)
+    })()
+  `
+  ;(document.head || document.documentElement).appendChild(script)
+  script.remove()
 
-  // 2) Đề phòng khi video bị tạm dừng do hộp thoại xác nhận đang chờ sẵn
+  // 2) Đề phòng khi video bị tạm dừng do hộp thoại xác nhận đang chờ sẵn (chạy ở Isolated World)
   document.addEventListener('pause', e => {
     if (e.target.tagName === 'VIDEO') {
       const video = e.target
@@ -398,7 +403,7 @@ function handleYouTubeNonStop() {
         if (!settings.enabled) return
         setTimeout(() => {
           const popup = document.querySelector('yt-confirm-dialog-renderer, ytmusic-you-there-renderer')
-          if (popup && popup.offsetWidth > 0 && popup.offsetHeight > 0) {
+          if (popup) {
             const confirmButton = popup.querySelector('#confirm-button')
             if (confirmButton) {
               confirmButton.click()

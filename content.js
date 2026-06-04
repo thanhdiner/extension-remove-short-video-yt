@@ -369,9 +369,51 @@ document.addEventListener('keydown', e => {
   }
 }, true) // Sử dụng capture phase để chạy trước trình lắng nghe mặc định của YouTube
 
+// ============ CORE: YOUTUBE NONSTOP (AUTO RESUME) ============
+function handleYouTubeNonStop() {
+  // 1) Khi hộp thoại xác nhận được mở ra
+  document.addEventListener('yt-popup-opened', e => {
+    getSettings().then(settings => {
+      if (!settings.enabled) return
+      const nodeName = e.detail?.nodeName || ''
+      if (nodeName === 'YT-CONFIRM-DIALOG-RENDERER' || nodeName === 'YTMUSIC-YOU-THERE-RENDERER') {
+        const confirmButton = document.querySelector('ytd-popup-container #confirm-button, ytmusic-popup-container #confirm-button, #confirm-button')
+        if (confirmButton) {
+          confirmButton.click()
+          const video = document.querySelector('video')
+          if (video && video.paused) {
+            video.play().catch(() => {})
+          }
+        }
+      }
+    })
+  }, true)
+
+  // 2) Đề phòng khi video bị tạm dừng do hộp thoại xác nhận đang chờ sẵn
+  document.addEventListener('pause', e => {
+    if (e.target.tagName === 'VIDEO') {
+      const video = e.target
+      getSettings().then(settings => {
+        if (!settings.enabled) return
+        setTimeout(() => {
+          const popup = document.querySelector('yt-confirm-dialog-renderer, ytmusic-you-there-renderer')
+          if (popup && popup.offsetWidth > 0 && popup.offsetHeight > 0) {
+            const confirmButton = popup.querySelector('#confirm-button')
+            if (confirmButton) {
+              confirmButton.click()
+              video.play().catch(() => {})
+            }
+          }
+        }, 150)
+      })
+    }
+  }, true)
+}
+
 // ============ BOOT ============
 ;(async () => {
   await applySettingsClass()
   await handleShortsRedirect()
   await startObserver()
+  handleYouTubeNonStop()
 })()

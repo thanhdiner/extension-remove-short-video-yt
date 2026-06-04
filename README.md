@@ -26,6 +26,10 @@ Chrome Extension giúp bạn ẩn hoàn toàn sự xuất hiện của YouTube S
 * **Không xung đột gõ phím:** Tự động vô hiệu hóa phím tắt khi bạn đang gõ chữ vào ô tìm kiếm, viết bình luận hoặc đăng bài viết.
 * **Hiển thị trực quan (Toast):** Xuất hiện thông báo dạng viên thuốc (Glassmorphic Toast) siêu đẹp hiển thị tốc độ phát hiện tại ngay trên khung video và tự động ẩn đi sau 1 giây.
 
+### 4. Tự động phát không dừng (YouTube NonStop)
+* Tự động phát hiện và bỏ qua hộp thoại xác nhận tạm dừng **"Video paused. Continue watching?" (Video đã tạm dừng. Tiếp tục xem?)** của YouTube và YouTube Music khi treo máy nghe nhạc hoặc playlist lâu.
+* Tự động click vào nút tiếp tục và cho video phát tiếp ngay lập tức mà không cần tương tác thủ công.
+
 ---
 
 ## Bảng phím tắt (Keyboard Shortcuts)

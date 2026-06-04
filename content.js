@@ -371,31 +371,7 @@ document.addEventListener('keydown', e => {
 
 // ============ CORE: YOUTUBE NONSTOP (AUTO RESUME) ============
 function handleYouTubeNonStop() {
-  const script = document.createElement('script')
-  script.textContent = `
-    (function() {
-      // 1) Lắng nghe sự kiện mở popup tại môi trường Page Context (MAIN World) để nhận được e.detail
-      document.addEventListener('yt-popup-opened', e => {
-        if (document.documentElement.classList.contains('hys-disabled')) return
-        
-        const nodeName = e.detail?.nodeName || ''
-        if (nodeName === 'YT-CONFIRM-DIALOG-RENDERER' || nodeName === 'YTMUSIC-YOU-THERE-RENDERER') {
-          const confirmButton = document.querySelector('ytd-popup-container #confirm-button, ytmusic-popup-container #confirm-button, #confirm-button')
-          if (confirmButton) {
-            confirmButton.click()
-            const video = document.querySelector('video')
-            if (video && video.paused) {
-              video.play().catch(() => {})
-            }
-          }
-        }
-      }, true)
-    })()
-  `
-  ;(document.head || document.documentElement).appendChild(script)
-  script.remove()
-
-  // 2) Đề phòng khi video bị tạm dừng do hộp thoại xác nhận đang chờ sẵn (chạy ở Isolated World)
+  // Đề phòng khi video bị tạm dừng do hộp thoại xác nhận đang chờ sẵn (chạy ở Isolated World)
   document.addEventListener('pause', e => {
     if (e.target.tagName === 'VIDEO') {
       const video = e.target

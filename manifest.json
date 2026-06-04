@@ -24,6 +24,12 @@
       "js": ["content.js"],
       "css": ["content.css"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": ["*://www.youtube.com/*", "*://m.youtube.com/*"],
+      "js": ["nonstop.js"],
+      "run_at": "document_idle",
+      "world": "MAIN"
     }
   ],
   "declarative_net_request": {

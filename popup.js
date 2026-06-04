@@ -35,8 +35,13 @@ async function init() {
     // Gửi message cho tab YouTube đang mở (nếu có)
     chrome.tabs.query({ url: ["*://www.youtube.com/*", "*://m.youtube.com/*"] }, (tabs) => {
       tabs.forEach(tab => {
-        chrome.tabs.sendMessage(tab.id, { type: 'HYS_TOGGLE', enabled });
-        chrome.tabs.sendMessage(tab.id, { type: 'HYS_REDIRECT_MODE', mode: redirectMode });
+        // Kiểm tra lastError trong callback để loại bỏ lỗi "Could not establish connection"
+        chrome.tabs.sendMessage(tab.id, { type: 'HYS_TOGGLE', enabled }, () => {
+          const err = chrome.runtime.lastError;
+        });
+        chrome.tabs.sendMessage(tab.id, { type: 'HYS_REDIRECT_MODE', mode: redirectMode }, () => {
+          const err = chrome.runtime.lastError;
+        });
       });
     });
     window.close();

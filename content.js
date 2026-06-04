@@ -49,11 +49,26 @@ const SELECTORS = [
   'ytd-rich-section-renderer[is-shorts]',
   'ytd-rich-shelf-renderer[is-shorts]',
   'ytd-rich-item-renderer[mini-mode][is-shorts]',
+  'grid-shelf-view-model:has(a[href*="/shorts/"])',
+  'ytd-shelf-renderer:has(a[href*="/shorts/"])',
+  'ytd-guide-entry-renderer:has(a[href*="/shorts/"])',
+  'ytd-mini-guide-entry-renderer:has(a[href*="/shorts/"])',
+  'ytd-reel-item-renderer',
+  'ytm-shorts-lockup-view-model-v2',
   'a[href*="/shorts/"]',
   '#related ytd-compact-video-renderer a[href*="/shorts/"]',
   '#endpoint[title="Shorts"]',
   'ytd-mini-guide-entry-renderer[aria-label="Shorts"]'
 ]
+
+async function applySettingsClass() {
+  const settings = await getSettings()
+  if (settings.enabled) {
+    document.documentElement.classList.remove('hys-disabled')
+  } else {
+    document.documentElement.classList.add('hys-disabled')
+  }
+}
 
 function removeShortsOnce(root = document) {
   let removed = 0
@@ -62,17 +77,20 @@ function removeShortsOnce(root = document) {
   SELECTORS.forEach(sel => {
     root.querySelectorAll(sel).forEach(el => {
       // Với anchor /shorts/, ẩn toàn bộ container video nếu có
-      if (el.tagName === 'A' && el.getAttribute('href').startsWith('/shorts/')) {
-        const wrap = el.closest('ytd-rich-item-renderer, ytd-video-renderer, ytd-compact-video-renderer, ytd-grid-video-renderer')
+      if (el.tagName === 'A' && el.getAttribute('href') && el.getAttribute('href').includes('/shorts/')) {
+        const wrap = el.closest('ytd-rich-item-renderer, ytd-video-renderer, ytd-compact-video-renderer, ytd-grid-video-renderer, ytd-reel-item-renderer, ytm-shorts-lockup-view-model-v2, yt-lockup-view-model, ytd-guide-entry-renderer, ytd-mini-guide-entry-renderer')
         if (wrap) {
-          wrap.style.display = 'none'
+          wrap.setAttribute('hys-hidden', 'true')
+          removed++
+        } else {
+          el.setAttribute('hys-hidden', 'true')
           removed++
         }
       } else if (
         el.tagName.startsWith('YTD-') || // renderer đặc trưng của Shorts
-        el.matches('ytd-reel-shelf-renderer, ytd-reel-video-renderer, ytd-rich-section-renderer[is-shorts]')
+        el.matches('ytd-reel-shelf-renderer, ytd-reel-video-renderer, ytd-rich-section-renderer[is-shorts], grid-shelf-view-model, ytd-shelf-renderer')
       ) {
-        el.style.display = 'none'
+        el.setAttribute('hys-hidden', 'true')
         removed++
       }
     })
@@ -81,8 +99,25 @@ function removeShortsOnce(root = document) {
   // 2) Trong results: các khối có đường dẫn shorts trong tiêu đề
   document.querySelectorAll('ytd-video-renderer a#thumbnail[href*="/shorts/"]').forEach(a => {
     const container = a.closest('ytd-video-renderer')
-    if (container) container.style.display = 'none'
-    removed++
+    if (container) {
+      container.setAttribute('hys-hidden', 'true')
+      removed++
+    }
+  })
+
+  // 3) Trong trang history/homepage: ẩn các chip lọc mang tên "Shorts"
+  root.querySelectorAll('yt-chip-cloud-chip-renderer, ytd-filter-chip-renderer, yt-tab-shape').forEach(chip => {
+    const text = chip.textContent ? chip.textContent.trim() : ''
+    const tabTitle = chip.getAttribute('tab-title') || ''
+    const ariaLabel = chip.getAttribute('aria-label') || ''
+    if (
+      text.toLowerCase() === 'shorts' || 
+      tabTitle.toLowerCase() === 'shorts' || 
+      ariaLabel.toLowerCase() === 'shorts'
+    ) {
+      chip.setAttribute('hys-hidden', 'true')
+      removed++
+    }
   })
 
   return removed
@@ -138,6 +173,7 @@ async function handleShortsRedirect() {
 chrome.runtime.onMessage.addListener(msg => {
   if (msg?.type === 'HYS_TOGGLE') {
     setSettings({ enabled: msg.enabled }).then(() => {
+      applySettingsClass()
       if (msg.enabled) startObserver()
       else stopObserver()
     })
@@ -149,6 +185,7 @@ chrome.runtime.onMessage.addListener(msg => {
 
 // ============ BOOT ============
 ;(async () => {
+  await applySettingsClass()
   await handleShortsRedirect()
   await startObserver()
 })()

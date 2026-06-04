@@ -1,27 +1,48 @@
-/* Ẩn mọi block Shorts “thô bạo” bằng CSS (nhanh & rẻ) */
-ytd-reel-shelf-renderer,
-ytd-reel-video-renderer,
-ytd-rich-section-renderer[is-shorts],
-ytd-reel-shelf-surface-renderer,
-a[href*="/shorts/"],
-ytd-grid-playlist-renderer[is-shorts],
-ytd-reel-shelf-renderer + ytd-continuation-item-renderer {
+/* 1. Hộp chứa nhóm/shelf Shorts (Trang chủ & Tìm kiếm) */
+html:not(.hys-disabled) ytd-reel-shelf-renderer,
+html:not(.hys-disabled) ytd-rich-section-renderer[is-shorts],
+html:not(.hys-disabled) ytd-rich-shelf-renderer[is-shorts],
+html:not(.hys-disabled) grid-shelf-view-model:has(a[href*="/shorts/"]),
+html:not(.hys-disabled) ytd-shelf-renderer:has(a[href*="/shorts/"]),
+html:not(.hys-disabled) ytd-reel-shelf-surface-renderer,
+html:not(.hys-disabled) ytd-reel-shelf-renderer + ytd-continuation-item-renderer {
   display: none !important;
 }
 
-/* Trong trang kết quả tìm kiếm và sidebar gợi ý */
-#related ytd-compact-video-renderer a[href*="/shorts/"] {
+/* 2. Video Shorts đơn lẻ hoặc trong danh sách */
+html:not(.hys-disabled) ytd-reel-video-renderer,
+html:not(.hys-disabled) ytd-rich-item-renderer[mini-mode][is-shorts],
+html:not(.hys-disabled) ytd-video-renderer:has(a[href*="/shorts/"]),
+html:not(.hys-disabled) yt-lockup-view-model:has(a[href*="/shorts/"]),
+html:not(.hys-disabled) ytd-grid-video-renderer:has(a[href*="/shorts/"]),
+html:not(.hys-disabled) ytd-compact-video-renderer:has(a[href*="/shorts/"]),
+html:not(.hys-disabled) ytd-grid-playlist-renderer[is-shorts],
+html:not(.hys-disabled) ytd-reel-item-renderer,
+html:not(.hys-disabled) ytm-shorts-lockup-view-model-v2,
+html:not(.hys-disabled) a[href*="/shorts/"] {
   display: none !important;
 }
 
-/* Nút Shorts ở sidebar trái */
-#endpoint[title="Shorts"],
-ytd-mini-guide-entry-renderer[aria-label="Shorts"] {
+/* 3. Phím tắt và Nút/Chip Shorts trên giao diện */
+html:not(.hys-disabled) #endpoint[title="Shorts"],
+html:not(.hys-disabled) ytd-mini-guide-entry-renderer[aria-label="Shorts"],
+html:not(.hys-disabled) ytd-guide-entry-renderer:has(a[href*="/shorts/"]),
+html:not(.hys-disabled) ytd-mini-guide-entry-renderer:has(a[href*="/shorts/"]),
+html:not(.hys-disabled) ytd-guide-entry-renderer:has(#endpoint[title="Shorts"]),
+html:not(.hys-disabled) ytd-filter-chip-renderer:has(yt-formatted-string[title="Shorts"]),
+html:not(.hys-disabled) ytd-filter-chip-renderer:has([title="Shorts"]),
+html:not(.hys-disabled) yt-chip-cloud-chip-renderer:has(yt-formatted-string[title="Shorts"]),
+html:not(.hys-disabled) yt-chip-cloud-chip-renderer:has([title="Shorts"]),
+html:not(.hys-disabled) yt-tab-shape[tab-title="Shorts"],
+html:not(.hys-disabled) yt-tab-shape[aria-label="Shorts"],
+html:not(.hys-disabled) [tab-title="Shorts"],
+html:not(.hys-disabled) [aria-label="Shorts"] {
   display: none !important;
 }
 
-/* Trang chủ “Shorts” module (đời mới) */
-ytd-rich-shelf-renderer[is-shorts],
-ytd-rich-item-renderer[mini-mode][is-shorts] {
+/* 4. Các phần tử ẩn động qua JS */
+html:not(.hys-disabled) [hys-hidden="true"] {
   display: none !important;
 }
+
+

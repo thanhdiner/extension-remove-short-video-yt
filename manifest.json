@@ -44,6 +44,11 @@
       "js": ["content-notebook.js"],
       "css": ["content-notebook.css"],
       "run_at": "document_start"
+    },
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content-altscroll.js"],
+      "run_at": "document_start"
     }
   ],
   "declarative_net_request": {

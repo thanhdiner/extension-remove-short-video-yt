@@ -1,5 +1,12 @@
 const STORAGE_KEY = 'hys_settings';
-const DEFAULT_SETTINGS = { enabled: true, shortsRedirect: 'block', notebookEnabled: true };
+const DEFAULT_SETTINGS = { 
+  enabled: true, 
+  shortsRedirect: 'block', 
+  notebookEnabled: true,
+  altScrollEnabled: true,
+  scrollSpeed: 5,
+  smoothScroll: true
+};
 
 function getSettings() {
   return new Promise(resolve => {
@@ -20,13 +27,41 @@ function setSettings(patch) {
 
 async function init() {
   const s = await getSettings();
+  
   const toggle = document.getElementById('toggleEnabled');
   const toggleNotebook = document.getElementById('toggleNotebook');
+  const toggleAltScroll = document.getElementById('toggleAltScroll');
+  const smoothInput = document.getElementById('smoothScroll');
+  
+  const speedInput = document.getElementById('speed');
+  const speedValue = document.getElementById('speedValue');
   const mode = document.getElementById('redirectMode');
 
+  // Load checkboxes and values
   toggle.checked = !!s.enabled;
   toggleNotebook.checked = s.notebookEnabled !== false;
-  mode.value = s.shortsRedirect;
+  toggleAltScroll.checked = s.altScrollEnabled !== false;
+  smoothInput.checked = s.smoothScroll !== false;
+  
+  speedInput.value = s.scrollSpeed || 5;
+  speedValue.textContent = (s.scrollSpeed || 5) + 'x';
+
+  function updateSliderProgress(input) {
+    const min = parseFloat(input.min || 1);
+    const max = parseFloat(input.max || 20);
+    const val = parseFloat(input.value);
+    const percent = ((val - min) / (max - min)) * 100;
+    input.style.setProperty('--value-percent', `${percent}%`);
+  }
+
+  // Initial progress update
+  updateSliderProgress(speedInput);
+
+  // Sync slider label and visual progress bar
+  speedInput.addEventListener('input', () => {
+    speedValue.textContent = speedInput.value + 'x';
+    updateSliderProgress(speedInput);
+  });
 
   // Initialize and sync custom select dropdown
   initCustomSelect();
@@ -35,9 +70,19 @@ async function init() {
   document.getElementById('apply').addEventListener('click', async () => {
     const enabled = toggle.checked;
     const notebookEnabled = toggleNotebook.checked;
+    const altScrollEnabled = toggleAltScroll.checked;
+    const smoothScroll = smoothInput.checked;
+    const scrollSpeed = parseFloat(speedInput.value);
     const redirectMode = mode.value;
 
-    await setSettings({ enabled, shortsRedirect: redirectMode, notebookEnabled });
+    await setSettings({ 
+      enabled, 
+      shortsRedirect: redirectMode, 
+      notebookEnabled,
+      altScrollEnabled,
+      scrollSpeed,
+      smoothScroll
+    });
 
     // Gửi message cho tab YouTube đang mở (nếu có)
     chrome.tabs.query({ url: ["*://www.youtube.com/*", "*://m.youtube.com/*"] }, (tabs) => {
@@ -56,6 +101,20 @@ async function init() {
     chrome.tabs.query({ url: ["https://notebooklm.google.com/*", "https://*.notebooklm.google.com/*"] }, (tabs) => {
       tabs.forEach(tab => {
         chrome.tabs.sendMessage(tab.id, { type: 'NOTEBOOK_TOGGLE', enabled: notebookEnabled }, () => {
+          const err = chrome.runtime.lastError;
+        });
+      });
+    });
+
+    // Gửi message cho tất cả các tab đang chạy AltScroll
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach(tab => {
+        chrome.tabs.sendMessage(tab.id, { 
+          type: 'ALTSCROLL_UPDATE', 
+          enabled: altScrollEnabled, 
+          scrollSpeed,
+          smoothScroll
+        }, () => {
           const err = chrome.runtime.lastError;
         });
       });

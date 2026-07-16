@@ -66,6 +66,37 @@
         </div>
       </div>
 
+      <!-- Toggle Switch for AltScroll -->
+      <label class="switch-container">
+        <span>Cuộn chuột nhanh (phím Alt)</span>
+        <div class="switch">
+          <input type="checkbox" id="toggleAltScroll" />
+          <span class="switch-slider"></span>
+        </div>
+      </label>
+
+      <!-- Toggle Switch for AltScroll Smooth -->
+      <label class="switch-container">
+        <span>Cuộn mượt mà (phím Alt)</span>
+        <div class="switch">
+          <input type="checkbox" id="smoothScroll" />
+          <span class="switch-slider"></span>
+        </div>
+      </label>
+
+      <!-- AltScroll Speed Multiplier Slider -->
+      <div class="control-group" style="margin-bottom: 12px;">
+        <div class="range-container">
+          <div class="range-header">
+            <span>Hệ số tốc độ cuộn</span>
+            <span id="speedValue">5x</span>
+          </div>
+          <div class="range-slider-wrapper">
+            <input type="range" id="speed" min="1" max="20" value="5" step="0.5">
+          </div>
+        </div>
+      </div>
+
       <!-- Action Button -->
       <div class="row" style="justify-content: flex-end; margin-bottom: 8px;">
         <button id="apply" class="primary">Áp dụng</button>

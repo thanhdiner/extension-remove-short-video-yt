@@ -1,5 +1,5 @@
 const STORAGE_KEY = 'hys_settings';
-const DEFAULT_SETTINGS = { enabled: true, shortsRedirect: 'block' };
+const DEFAULT_SETTINGS = { enabled: true, shortsRedirect: 'block', notebookEnabled: true };
 
 function getSettings() {
   return new Promise(resolve => {
@@ -21,9 +21,11 @@ function setSettings(patch) {
 async function init() {
   const s = await getSettings();
   const toggle = document.getElementById('toggleEnabled');
+  const toggleNotebook = document.getElementById('toggleNotebook');
   const mode = document.getElementById('redirectMode');
 
   toggle.checked = !!s.enabled;
+  toggleNotebook.checked = s.notebookEnabled !== false;
   mode.value = s.shortsRedirect;
 
   // Initialize and sync custom select dropdown
@@ -32,9 +34,10 @@ async function init() {
 
   document.getElementById('apply').addEventListener('click', async () => {
     const enabled = toggle.checked;
+    const notebookEnabled = toggleNotebook.checked;
     const redirectMode = mode.value;
 
-    await setSettings({ enabled, shortsRedirect: redirectMode });
+    await setSettings({ enabled, shortsRedirect: redirectMode, notebookEnabled });
 
     // Gửi message cho tab YouTube đang mở (nếu có)
     chrome.tabs.query({ url: ["*://www.youtube.com/*", "*://m.youtube.com/*"] }, (tabs) => {
@@ -48,6 +51,16 @@ async function init() {
         });
       });
     });
+
+    // Gửi message cho tab NotebookLM đang mở (nếu có)
+    chrome.tabs.query({ url: ["https://notebooklm.google.com/*", "https://*.notebooklm.google.com/*"] }, (tabs) => {
+      tabs.forEach(tab => {
+        chrome.tabs.sendMessage(tab.id, { type: 'NOTEBOOK_TOGGLE', enabled: notebookEnabled }, () => {
+          const err = chrome.runtime.lastError;
+        });
+      });
+    });
+
     window.close();
   });
 }

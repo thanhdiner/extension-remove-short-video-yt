@@ -1,0 +1,78 @@
+/* Prefix all styles with .notebook-optimizer-active to allow toggling from popup settings */
+
+/* Ẩn hẳn thẻ cha chứa tất cả lỗi YouTube */
+.notebook-optimizer-active .ytp-error {
+  display: none !important;
+}
+
+/* Ẩn hẳn video player có lỗi */
+.notebook-optimizer-active .html5-video-player:has(.ytp-error) {
+  display: none !important;
+}
+
+/* Ẩn iframe YouTube có lỗi */
+.notebook-optimizer-active iframe[src*="youtube.com"]:has(.ytp-error),
+.notebook-optimizer-active iframe[src*="youtube-nocookie.com"]:has(.ytp-error) {
+  display: none !important;
+}
+
+/* Ẩn container YouTube trong NotebookLM */
+.notebook-optimizer-active .youtube-container.hidden-video {
+  display: none !important;
+}
+
+/* Ẩn iframe YouTube bị đánh dấu lỗi */
+.notebook-optimizer-active iframe.youtube-error {
+  display: none !important;
+}
+
+/* Ẩn Source guide container */
+.notebook-optimizer-active .source-guide-container {
+  display: none !important;
+}
+
+/* Style cho elements-container như code block */
+.notebook-optimizer-active .elements-container {
+  position: relative;
+  background: #1e1e1e !important;
+  border: 1px solid #3e3e3e !important;
+  border-radius: 8px !important;
+  padding: 20px !important;
+  margin: 10px 0 !important;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  overflow-x: auto !important;
+}
+
+.notebook-optimizer-active .elements-container * {
+  color: #d4d4d4 !important;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
+}
+
+/* Nút copy */
+.notebook-optimizer-active .copy-button {
+  position: absolute !important;
+  top: 10px !important;
+  right: 10px !important;
+  background: #2d2d30 !important;
+  color: #cccccc !important;
+  border: 1px solid #3e3e3e !important;
+  border-radius: 4px !important;
+  padding: 6px 12px !important;
+  cursor: pointer !important;
+  font-size: 12px !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  transition: all 0.2s ease !important;
+  z-index: 10 !important;
+}
+
+.notebook-optimizer-active .copy-button:hover {
+  background: #3e3e42 !important;
+  border-color: #007acc !important;
+}
+
+.notebook-optimizer-active .copy-button.copied {
+  background: #0e639c !important;
+  color: #ffffff !important;
+}

@@ -9,7 +9,12 @@
     "128": "icon128.png"
   },
   "permissions": ["storage", "declarativeNetRequest", "tabs", "scripting"],
-  "host_permissions": ["*://www.youtube.com/*", "*://m.youtube.com/*"],
+  "host_permissions": [
+    "*://www.youtube.com/*", 
+    "*://m.youtube.com/*",
+    "https://notebooklm.google.com/*",
+    "https://*.notebooklm.google.com/*"
+  ],
   "action": {
     "default_title": "Hide Shorts",
     "default_popup": "popup.html"
@@ -30,6 +35,15 @@
       "js": ["nonstop.js"],
       "run_at": "document_idle",
       "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://notebooklm.google.com/*",
+        "https://*.notebooklm.google.com/*"
+      ],
+      "js": ["content-notebook.js"],
+      "css": ["content-notebook.css"],
+      "run_at": "document_start"
     }
   ],
   "declarative_net_request": {

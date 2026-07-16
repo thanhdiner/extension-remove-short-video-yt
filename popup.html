@@ -1,39 +1,72 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <title>Hide Shorts</title>
-    <style>
-      body { font-family: system-ui, sans-serif; padding: 12px; width: 240px; }
-      .row { display: flex; justify-content: space-between; align-items: center; margin: 8px 0; }
-      select, button { font: inherit; }
-      small { color: #666; }
-    </style>
+    <link rel="stylesheet" href="popup.css">
   </head>
   <body>
-    <h3 style="margin:0 0 8px;">Hide YouTube Shorts</h3>
-    <div class="row">
-      <span>Bật ẩn Shorts</span>
-      <label>
-        <input type="checkbox" id="toggleEnabled" />
+    <main class="shell">
+      <header class="topbar">
+        <div class="logo-area">
+          <img src="icon32.png" class="logo-img" alt="Logo">
+          <h1>Hide YouTube Shorts</h1>
+        </div>
+      </header>
+
+      <!-- Toggle Switch -->
+      <label class="switch-container">
+        <span>Bật ẩn Shorts</span>
+        <div class="switch">
+          <input type="checkbox" id="toggleEnabled" />
+          <span class="switch-slider"></span>
+        </div>
       </label>
-    </div>
 
-    <div class="row">
-      <span>Đi vào /shorts/ thì</span>
-      <select id="redirectMode">
-        <option value="block">Chặn (về Home)</option>
-        <option value="watch">Chuyển sang /watch?v=...</option>
-      </select>
-    </div>
+      <!-- Custom Redirect Select -->
+      <div class="row">
+        <span>Đi vào /shorts/ thì</span>
+        <div class="custom-select-container">
+          <div class="custom-select-wrapper">
+            <button type="button" class="custom-select-trigger" id="modeTrigger" aria-haspopup="listbox" aria-expanded="false">
+              <span class="custom-select-value">Chặn (về Home)</span>
+              <span class="custom-select-arrow">
+                <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </span>
+            </button>
+            <ul class="custom-select-options hidden" role="listbox" id="modeOptions">
+              <li class="custom-option selected" data-value="block" role="option" aria-selected="true">
+                <span>Chặn (về Home)</span>
+                <span class="check-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+              </li>
+              <li class="custom-option" data-value="watch" role="option" aria-selected="false">
+                <span>Chuyển sang watch</span>
+                <span class="check-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+              </li>
+            </ul>
+            <!-- Hidden native select for JS compatibility -->
+            <select id="redirectMode" class="hidden">
+              <option value="block" selected>Chặn (về Home)</option>
+              <option value="watch">Chuyển sang watch</option>
+            </select>
+          </div>
+        </div>
+      </div>
 
-    <div class="row" style="justify-content:flex-end;">
-      <button id="apply">Áp dụng</button>
-    </div>
+      <!-- Action Button -->
+      <div class="row" style="justify-content: flex-end; margin-bottom: 8px;">
+        <button id="apply" class="primary">Áp dụng</button>
+      </div>
 
-    <small>
-      Mẹo: nếu YouTube đổi DOM, bật/tắt lại để refresh observer.  
-    </small>
+      <!-- Footer tips -->
+      <footer class="tip-footer">
+        Mẹo: nếu YouTube đổi DOM, bật/tắt lại để refresh observer.
+      </footer>
+    </main>
 
     <script src="popup.js"></script>
   </body>

@@ -5,7 +5,9 @@ const DEFAULT_SETTINGS = {
   notebookEnabled: true,
   altScrollEnabled: true,
   scrollSpeed: 5,
-  smoothScroll: true
+  smoothScroll: true,
+  customSeekEnabled: true,
+  seekSeconds: 20
 };
 
 function getSettings() {
@@ -37,14 +39,22 @@ async function init() {
   const speedValue = document.getElementById('speedValue');
   const mode = document.getElementById('redirectMode');
 
+  const toggleCustomSeek = document.getElementById('toggleCustomSeek');
+  const seekInput = document.getElementById('seekSeconds');
+  const seekValue = document.getElementById('seekValue');
+
   // Load checkboxes and values
   toggle.checked = !!s.enabled;
   toggleNotebook.checked = s.notebookEnabled !== false;
   toggleAltScroll.checked = s.altScrollEnabled !== false;
   smoothInput.checked = s.smoothScroll !== false;
+  toggleCustomSeek.checked = s.customSeekEnabled !== false;
   
   speedInput.value = s.scrollSpeed || 5;
   speedValue.textContent = (s.scrollSpeed || 5) + 'x';
+
+  seekInput.value = s.seekSeconds || 20;
+  seekValue.textContent = (s.seekSeconds || 20) + 's';
 
   function updateSliderProgress(input) {
     const min = parseFloat(input.min || 1);
@@ -56,11 +66,17 @@ async function init() {
 
   // Initial progress update
   updateSliderProgress(speedInput);
+  updateSliderProgress(seekInput);
 
   // Sync slider label and visual progress bar
   speedInput.addEventListener('input', () => {
     speedValue.textContent = speedInput.value + 'x';
     updateSliderProgress(speedInput);
+  });
+
+  seekInput.addEventListener('input', () => {
+    seekValue.textContent = seekInput.value + 's';
+    updateSliderProgress(seekInput);
   });
 
   // Initialize and sync custom select dropdown
@@ -74,6 +90,8 @@ async function init() {
     const smoothScroll = smoothInput.checked;
     const scrollSpeed = parseFloat(speedInput.value);
     const redirectMode = mode.value;
+    const customSeekEnabled = toggleCustomSeek.checked;
+    const seekSeconds = parseInt(seekInput.value, 10) || 20;
 
     await setSettings({ 
       enabled, 
@@ -81,7 +99,9 @@ async function init() {
       notebookEnabled,
       altScrollEnabled,
       scrollSpeed,
-      smoothScroll
+      smoothScroll,
+      customSeekEnabled,
+      seekSeconds
     });
 
     // Gửi message cho tab YouTube đang mở (nếu có)
@@ -92,6 +112,13 @@ async function init() {
           const err = chrome.runtime.lastError;
         });
         chrome.tabs.sendMessage(tab.id, { type: 'HYS_REDIRECT_MODE', mode: redirectMode }, () => {
+          const err = chrome.runtime.lastError;
+        });
+        chrome.tabs.sendMessage(tab.id, { 
+          type: 'HYS_SEEK_UPDATE', 
+          customSeekEnabled, 
+          seekSeconds 
+        }, () => {
           const err = chrome.runtime.lastError;
         });
       });

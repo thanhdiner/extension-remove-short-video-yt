@@ -97,6 +97,28 @@
         </div>
       </div>
 
+      <!-- Toggle Switch for Custom YouTube Seek -->
+      <label class="switch-container">
+        <span>Tua video bằng mũi tên</span>
+        <div class="switch">
+          <input type="checkbox" id="toggleCustomSeek" />
+          <span class="switch-slider"></span>
+        </div>
+      </label>
+
+      <!-- Custom Seek Seconds Slider -->
+      <div class="control-group" style="margin-bottom: 12px;">
+        <div class="range-container">
+          <div class="range-header">
+            <span>Thời gian tua bằng mũi tên</span>
+            <span id="seekValue">20s</span>
+          </div>
+          <div class="range-slider-wrapper">
+            <input type="range" id="seekSeconds" min="1" max="120" value="20" step="1">
+          </div>
+        </div>
+      </div>
+
       <!-- Action Button -->
       <div class="row" style="justify-content: flex-end; margin-bottom: 8px;">
         <button id="apply" class="primary">Áp dụng</button>

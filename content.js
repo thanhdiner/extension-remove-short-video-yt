@@ -2,8 +2,12 @@
 const STORAGE_KEY = 'hys_settings'
 const DEFAULT_SETTINGS = {
   enabled: true, // bật ẩn Shorts
-  shortsRedirect: 'block' // 'block' | 'watch'
+  shortsRedirect: 'block', // 'block' | 'watch'
+  customSeekEnabled: true,
+  seekSeconds: 20
 }
+
+let cachedSettings = { ...DEFAULT_SETTINGS }
 
 // ============ HELPERS ============
 function getSettings() {
@@ -18,10 +22,16 @@ function setSettings(patch) {
   return new Promise(resolve => {
     chrome.storage.sync.get([STORAGE_KEY], res => {
       const merged = { ...DEFAULT_SETTINGS, ...(res[STORAGE_KEY] || {}), ...patch }
+      cachedSettings = merged
       chrome.storage.sync.set({ [STORAGE_KEY]: merged }, resolve)
     })
   })
 }
+
+// Khởi tạo cache từ storage
+getSettings().then(s => {
+  cachedSettings = s
+})
 
 function isShortsUrl(url) {
   try {
@@ -181,6 +191,14 @@ chrome.runtime.onMessage.addListener(msg => {
   if (msg?.type === 'HYS_REDIRECT_MODE') {
     setSettings({ shortsRedirect: msg.mode })
   }
+  if (msg?.type === 'HYS_SEEK_UPDATE') {
+    cachedSettings.customSeekEnabled = msg.customSeekEnabled
+    cachedSettings.seekSeconds = msg.seekSeconds
+    setSettings({
+      customSeekEnabled: msg.customSeekEnabled,
+      seekSeconds: msg.seekSeconds
+    })
+  }
 })
 
 // ============ CORE: VIDEO SPEED CONTROL ============
@@ -227,6 +245,64 @@ function showSpeedIndicator(video, speed) {
     indicator.style.opacity = '0'
     indicator.style.transform = 'translate(-50%, -8px)'
   }, 1000)
+}
+
+// ============ CORE: VIDEO CUSTOM SEEK INDICATOR ============
+let seekAccumulator = 0
+let seekAccumulatorTimeout = null
+
+function showSeekIndicator(video, delta) {
+  const player = video.closest('#movie_player') || video.parentElement
+  if (!player) return
+
+  if (seekAccumulatorTimeout && (Math.sign(seekAccumulator) === Math.sign(delta))) {
+    seekAccumulator += delta
+  } else {
+    seekAccumulator = delta
+  }
+
+  if (seekAccumulatorTimeout) {
+    clearTimeout(seekAccumulatorTimeout)
+  }
+
+  let indicator = player.querySelector('.hys-seek-indicator')
+  if (!indicator) {
+    indicator = document.createElement('div')
+    indicator.className = 'hys-seek-indicator'
+    Object.assign(indicator.style, {
+      position: 'absolute',
+      top: '50%',
+      transform: 'translate(-50%, -50%) scale(0.9)',
+      backgroundColor: 'rgba(28, 28, 28, 0.85)',
+      backdropFilter: 'blur(8px)',
+      color: '#fff',
+      padding: '12px 22px',
+      borderRadius: '24px',
+      fontSize: '16px',
+      fontWeight: '700',
+      zIndex: '2001',
+      pointerEvents: 'none',
+      transition: 'opacity 0.2s ease, transform 0.2s ease',
+      opacity: '0',
+      boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+      border: '1px solid rgba(255,255,255,0.15)',
+      fontFamily: 'Roboto, Arial, sans-serif'
+    })
+    player.appendChild(indicator)
+  }
+
+  indicator.style.left = delta > 0 ? '70%' : '30%'
+  const text = seekAccumulator > 0 ? `+${seekAccumulator}s ▶▶` : `◀◀ ${seekAccumulator}s`
+  indicator.textContent = text
+  indicator.style.opacity = '1'
+  indicator.style.transform = 'translate(-50%, -50%) scale(1)'
+
+  seekAccumulatorTimeout = setTimeout(() => {
+    indicator.style.opacity = '0'
+    indicator.style.transform = 'translate(-50%, -50%) scale(0.9)'
+    seekAccumulator = 0
+    seekAccumulatorTimeout = null
+  }, 800)
 }
 
 // ============ CORE: PERSISTENT PLAYBACK RATE ============
@@ -366,6 +442,39 @@ document.addEventListener('keydown', e => {
     
     setSettings({ userSpeed: currentSpeed })
     showSpeedIndicator(video, currentSpeed)
+  }
+
+  // 3) Xử lý phím ArrowRight và ArrowLeft để tua video theo số giây tùy chỉnh
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    if (!cachedSettings.customSeekEnabled) return
+
+    const active = document.activeElement
+    if (active && (
+      active.tagName === 'INPUT' ||
+      active.tagName === 'TEXTAREA' ||
+      active.isContentEditable ||
+      active.getAttribute('role') === 'textbox' ||
+      active.classList.contains('ytp-progress-bar')
+    )) {
+      return
+    }
+
+    if (e.ctrlKey || e.altKey || e.metaKey) return
+
+    const video = document.querySelector('video')
+    if (!video) return
+
+    e.preventDefault()
+    e.stopPropagation()
+    e.stopImmediatePropagation()
+
+    const step = cachedSettings.seekSeconds ?? 20
+    const delta = e.key === 'ArrowRight' ? step : -step
+    let newTime = video.currentTime + delta
+    newTime = Math.max(0, Math.min(video.duration || Infinity, newTime))
+    video.currentTime = newTime
+
+    showSeekIndicator(video, delta)
   }
 }, true) // Sử dụng capture phase để chạy trước trình lắng nghe mặc định của YouTube
 

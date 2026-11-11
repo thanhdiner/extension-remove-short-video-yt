@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Blocked - Focus Firewall</title>
+  <link rel="stylesheet" href="blocked.css">
+</head>
+<body>
+  <div class="container">
+    <h1 class="title" data-i18n="blocked">Blocked.</h1>
+    <section class="motivation" aria-label="Lời nhắc tập trung">
+      <p id="motivation-quote" class="motivation-title">5 năm nữa, m sẽ sống cuộc đời mình mơ ước, hay vẫn ngồi đây hối hận vì những năm tháng đã lãng phí?</p>
+      <p class="motivation-text" data-i18n="motivationDetail">Đừng đánh đổi những giờ có thể xây nên nó lấy thêm vài phút lướt vô thức.</p>
+    </section>
+    <div class="details">
+      <span class="label" data-i18n="blockedUrl">Blocked URL:</span>
+      <span id="blocked-url" class="value">-</span>
+    </div>
+    
+    <div id="focus-info" class="focus-box" style="display: none;">
+      <div class="focus-title" data-i18n="focusActive">Focus Session Active</div>
+      <div class="details">
+        <span class="label" data-i18n="task">Task:</span>
+        <span id="focus-task" class="value">-</span>
+      </div>
+      <div class="details">
+        <span class="label" data-i18n="blockedRemaining">Time Remaining:</span>
+        <span id="focus-time" class="value">-</span>
+      </div>
+    </div>
+    
+    <button id="back-btn" class="btn" data-i18n="backToWork">Back to work</button>
+  </div>
+  <script src="../dist/language-runtime.js"></script>
+  <script src="blocked.js"></script>
+</body>
+</html>

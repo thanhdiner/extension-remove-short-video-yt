@@ -1,0 +1,144 @@
+"use strict";
+const { test } = require("node:test");
+const assert = require("node:assert/strict");
+const fs = require("node:fs/promises");
+const os = require("node:os");
+const path = require("node:path");
+const { execFileSync, spawn } = require("node:child_process");
+const service = require("../terminal-host/git");
+const git = (cwd, ...args) => execFileSync("git", args, { cwd, encoding: "utf8", windowsHide: true });
+async function fixture(t) {
+  const cwd = await fs.mkdtemp(path.join(os.tmpdir(), "local-editor-git-"));
+  t.after(() => fs.rm(cwd, { recursive: true, force: true }));
+  git(cwd, "init", "-b", "main");
+  git(cwd, "config", "user.name", "Editor Test"); git(cwd, "config", "user.email", "test@example.invalid");
+  git(cwd, "config", "commit.gpgsign", "false"); git(cwd, "config", "core.autocrlf", "false");
+  const request = (operation, extra = {}) => service.execute({ operation, cwd, ...extra });
+  const write = (name, text) => fs.writeFile(path.join(cwd, name), text);
+  return { cwd, request, write };
+}
+test("unborn repo, literal unicode filenames, staged/worktree diff and staged-only commit", async t => {
+  const { cwd, request, write } = await fixture(t);
+  const name = "tên [file].txt";
+  await write(name, "first\n"); await write("other.txt", "untouched\n");
+  let result = await request("status"); assert.equal(result.head, false); assert.equal(result.branch, "main"); assert.equal(result.changes.length, 2);
+  let diff = await request("diff", { path: name }); assert.equal(diff.original, ""); assert.equal(diff.modified, "first\n");
+  await request("stage", { path: name }); await write(name, "second\n");
+  diff = await request("diff", { path: name, staged: true }); assert.equal(diff.original, ""); assert.equal(diff.modified, "first\n");
+  diff = await request("diff", { path: name }); assert.equal(diff.original, "first\n"); assert.equal(diff.modified, "second\n");
+  await request("unstage", { path: name }); assert.equal(await fs.readFile(path.join(cwd, name), "utf8"), "second\n");
+  await assert.rejects(request("commit", { message: "empty index" }), /Stage changes/);
+  await request("stage", { path: name });
+  result = await request("commit", { message: "feat: đầu tiên\n\nbody" });
+  assert.equal(result.commits.length, 1); assert.equal(result.commits[0].subject, "feat: đầu tiên"); assert.equal(result.commits[0].author, "Editor Test");
+  assert.equal(result.commits[0].refs, "HEAD -> main"); assert.equal(result.changes[0].path, "other.txt");
+  assert.throws(() => git(cwd, "show", "HEAD:other.txt"));
+  await assert.rejects(request("commit", { message: " " }), /Enter a commit message/);
+});
+test("rename, modify renamed file, unstage, deletion and nested repository discovery", async t => {
+  const { cwd, request, write } = await fixture(t);
+  await write("before.txt", "one\ntwo\nthree\n"); await request("stage", { path: "before.txt" }); await request("commit", { message: "initial" });
+  git(cwd, "mv", "before.txt", "after.txt");
+  let result = await request("status"); assert.equal(result.changes[0].oldPath, "before.txt");
+  let diff = await request("diff", { path: "after.txt", staged: true }); assert.equal(diff.original, diff.modified);
+  await write("after.txt", "one\ntwo\nthree\nchanged\n"); await request("stage", { path: "after.txt" });
+  diff = await request("diff", { path: "after.txt", staged: true }); assert.match(diff.modified, /changed/);
+  await request("unstage", { path: "after.txt" }); assert.equal(await fs.readFile(path.join(cwd, "after.txt"), "utf8"), diff.modified);
+  assert.equal(git(cwd, "diff", "--cached"), "");
+  await request("stage", { path: "before.txt" }); await request("stage", { path: "after.txt" }); await request("commit", { message: "rename" });
+  await fs.unlink(path.join(cwd, "after.txt")); diff = await request("diff", { path: "after.txt" }); assert.equal(diff.modified, ""); assert.match(diff.original, /changed/);
+  await request("stage", { path: "after.txt" }); diff = await request("diff", { path: "after.txt", staged: true }); assert.equal(diff.modified, "");
+  await request("unstage", { path: "after.txt" }); assert.equal((await request("status")).changes[0].worktree, "D");
+  await fs.mkdir(path.join(cwd, "nested")); result = await service.execute({ cwd: path.join(cwd, "nested"), operation: "status" }); assert.equal(result.path, await fs.realpath(cwd));
+});
+test("rejects traversal, unsupported operations, binary and oversized text", async t => {
+  const { request, write } = await fixture(t);
+  await write("binary.bin", Buffer.from([0, 1, 2])); await write("big.txt", "x".repeat(1024 * 1024 + 1));
+  await assert.rejects(request("diff", { path: "../outside.txt" }), /Invalid repository/);
+  await assert.rejects(request("diff", { path: ".git/config" }), /Invalid repository/);
+  await assert.rejects(request("diff", { path: "binary.bin" }), /Binary/);
+  await assert.rejects(request("diff", { path: "big.txt" }), /1 MB/);
+  await assert.rejects(request("deleteRepo", { path: "binary.bin" }), /Unsupported/);
+});
+test("merge conflicts are surfaced and commit failure preserves changes", async t => {
+  const { cwd, request, write } = await fixture(t);
+  await write("conflict.txt", "base\n"); await request("stage", { path: "conflict.txt" }); await request("commit", { message: "base" });
+  git(cwd, "checkout", "-b", "other"); await write("conflict.txt", "other\n"); git(cwd, "commit", "-am", "other");
+  git(cwd, "checkout", "main"); await write("conflict.txt", "main\n"); git(cwd, "commit", "-am", "main");
+  assert.throws(() => git(cwd, "merge", "other"));
+  const result = await request("status"); assert.equal(result.changes[0].index, "U"); assert.equal(result.commits.length, 2);
+  await assert.rejects(request("diff", { path: "conflict.txt" }), /Resolve merge conflicts/);
+  await assert.rejects(request("commit", { message: "unresolved" })); assert.equal((await request("status")).changes[0].index, "U");
+});
+test("local branches and local remote fetch/pull/push preserve divergent history", async t => {
+  const { cwd, request, write } = await fixture(t);
+  const remoteBase = await fs.mkdtemp(path.join(os.tmpdir(), "local-editor-git-remote-"));
+  t.after(() => fs.rm(remoteBase, { recursive: true, force: true }));
+  const remote = path.join(remoteBase, "remote.git"), clone = path.join(remoteBase, "clone");
+  git(remoteBase, "init", "--bare", remote);
+  await write("tracked.txt", "seed\n"); await request("stage", { path: "tracked.txt" }); await request("commit", { message: "seed" });
+  await assert.rejects(request("push"), /Configure a remote/);
+  git(cwd, "remote", "add", "origin", remote);
+  let result = await request("push"); assert.equal(result.branches[0].upstream, "origin/main");
+  result = await request("createBranch", { branch: "feature/test" }); assert.equal(result.branch, "feature/test");
+  await assert.rejects(request("createBranch", { branch: "--orphan=oops" }), /Invalid branch/);
+  result = await request("switchBranch", { branch: "main" }); assert.equal(result.branch, "main");
+  git(remoteBase, "clone", "-b", "main", remote, clone); git(clone, "config", "user.name", "Remote Test"); git(clone, "config", "user.email", "remote@example.invalid"); git(clone, "config", "commit.gpgsign", "false");
+  await fs.writeFile(path.join(clone, "tracked.txt"), "remote update\n"); git(clone, "commit", "-am", "remote update"); git(clone, "push");
+  result = await request("fetch"); assert.equal(result.behind, 1); assert.equal(result.ahead, 0);
+  result = await request("pull"); assert.equal(result.behind, 0); assert.equal(await fs.readFile(path.join(cwd, "tracked.txt"), "utf8"), "remote update\n");
+  await write("tracked.txt", "local unsaved disk edit\n");
+  await assert.rejects(request("switchBranch", { branch: "feature/test" })); assert.equal((await request("status")).branch, "main");
+  await request("stage", { path: "tracked.txt" }); await request("commit", { message: "local history" });
+  await fs.writeFile(path.join(clone, "tracked.txt"), "divergent remote\n"); git(clone, "commit", "-am", "divergent remote"); git(clone, "push");
+  result = await request("fetch"); assert.equal(result.ahead, 1); assert.equal(result.behind, 1);
+  const before = git(cwd, "rev-parse", "HEAD");
+  await assert.rejects(request("pull")); await assert.rejects(request("push"));
+  assert.equal(git(cwd, "rev-parse", "HEAD"), before); assert.equal(await fs.readFile(path.join(cwd, "tracked.txt"), "utf8"), "local unsaved disk edit\n");
+});
+test("native messaging returns correlated Git results and recovers after errors", async t => {
+  const { cwd, write } = await fixture(t); await write("native.txt", "native\n");
+  const host = spawn(process.execPath, [path.join(__dirname, "../terminal-host/host.js")], { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
+  t.after(() => { host.stdin.end(); host.kill(); });
+  let buffer = Buffer.alloc(0); const waiting = new Map();
+  host.stdout.on("data", data => {
+    buffer = Buffer.concat([buffer, data]);
+    while (buffer.length >= 4 && buffer.length >= 4 + buffer.readUInt32LE(0)) {
+      const length = buffer.readUInt32LE(0); const message = JSON.parse(buffer.subarray(4, 4 + length)); buffer = buffer.subarray(4 + length);
+      waiting.get(message.id)?.(message); waiting.delete(message.id);
+    }
+  });
+  const send = (id, operation, extra = {}) => new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(Error("native host timeout")), 15000);
+    waiting.set(id, value => { clearTimeout(timer); resolve(value); });
+    const payload = Buffer.from(JSON.stringify({ type: "git", id, operation, cwd, ...extra })); const header = Buffer.alloc(4); header.writeUInt32LE(payload.length); host.stdin.write(Buffer.concat([header, payload]));
+  });
+  const results = await Promise.all([send(1, "status"), send(2, "stage", { path: "../invalid" }), send(3, "stage", { path: "native.txt" })]);
+  assert.equal(results[0].id, 1); assert.equal(results[0].result.changes[0].path, "native.txt");
+  assert.match(results[1].error, /Invalid/); assert.equal(results[2].result.changes[0].index, "A");
+});
+test("stash, tags, remotes, worktrees and clone operate on explicit targets", async t => {
+  const { cwd, request, write } = await fixture(t);
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), "local-editor-git-extra-"));
+  t.after(() => fs.rm(base, { recursive: true, force: true }));
+  await write("tracked.txt", "base\n"); await request("stage", { path: "tracked.txt" }); await request("commit", { message: "initial" });
+  await write("tracked.txt", "draft\n"); await write("untracked.txt", "new\n");
+  await request("stashCreate", { message: "work in progress" });
+  let stashes = (await request("stashList")).stashes; assert.equal(stashes.length, 1); assert.match(stashes[0].subject, /work in progress/);
+  assert.equal(await fs.readFile(path.join(cwd, "tracked.txt"), "utf8"), "base\n");
+  await assert.rejects(request("stashDrop", { ref: "--all" }), /Invalid stash/);
+  await request("stashPop", { ref: stashes[0].ref }); assert.equal(await fs.readFile(path.join(cwd, "tracked.txt"), "utf8"), "draft\n");
+  assert.equal(await fs.readFile(path.join(cwd, "untracked.txt"), "utf8"), "new\n");
+  await request("tagCreate", { name: "v1" }); assert.deepEqual((await request("tagList")).tags, ["v1"]);
+  await assert.rejects(request("tagCreate", { name: "--force" }), /Invalid/);
+  await request("tagDelete", { name: "v1" }); assert.deepEqual((await request("tagList")).tags, []);
+  const bare = path.join(base, "remote.git"); git(base, "init", "--bare", bare);
+  await request("remoteAdd", { name: "origin", url: bare }); assert.equal(path.resolve((await request("remoteList")).remotes[0].url), path.resolve(bare));
+  await request("push");
+  const clone = await service.execute({ operation: "clone", cwd: base, url: bare, name: "clone" }); assert.equal(clone.name, "clone");
+  await assert.rejects(service.execute({ operation: "clone", cwd: base, url: bare, name: "../escape" }), /Invalid/);
+  await request("remoteRemove", { name: "origin" }); assert.deepEqual((await request("remoteList")).remotes, []);
+  git(cwd, "branch", "other"); const destination = path.join(base, "worktree");
+  await request("worktreeAdd", { destination, branch: "other" });
+  const worktrees = (await request("worktreeList")).worktrees; assert.equal(worktrees.length, 2); assert.ok(worktrees.some(w => w.branch === "other"));
+});

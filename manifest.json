@@ -1,38 +1,95 @@
 {
   "manifest_version": 3,
-  "name": "Hide YouTube Shorts",
-  "version": "1.0.0",
-  "description": "Ẩn toàn bộ YouTube Shorts và chặn các URL /shorts/.",
+  "name": "DinKit",
+  "version": "1.1.1",
+  "description": "Ẩn YouTube Shorts và quản lý thời gian tập trung với Focus Firewall.",
   "icons": {
-    "16": "icon16.png",
-    "32": "icon32.png",
-    "128": "icon128.png"
+    "16": "focus-toolkit-icon16.png",
+    "32": "focus-toolkit-icon32.png",
+    "48": "focus-toolkit-icon48.png",
+    "128": "focus-toolkit-icon128.png"
   },
-  "permissions": ["storage", "declarativeNetRequest", "tabs", "scripting"],
+  "permissions": [
+    "clipboardWrite",
+    "downloads",
+    "proxy",
+    "webRequest",
+    "webRequestAuthProvider",
+    "storage",
+    "declarativeNetRequest",
+    "tabs",
+    "scripting",
+    "declarativeNetRequestFeedback",
+    "alarms",
+    "activeTab",
+    "idle",
+    "notifications",
+    "nativeMessaging",
+    "clipboardRead"
+  ],
   "host_permissions": [
-    "*://www.youtube.com/*", 
-    "*://m.youtube.com/*",
-    "https://notebooklm.google.com/*",
-    "https://*.notebooklm.google.com/*"
+    "<all_urls>"
   ],
   "action": {
-    "default_title": "Hide Shorts",
-    "default_popup": "popup.html"
+    "default_title": "DinKit",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "focus-toolkit-icon16.png",
+      "32": "focus-toolkit-icon32.png",
+      "48": "focus-toolkit-icon48.png",
+      "128": "focus-toolkit-icon128.png"
+    }
   },
   "background": {
-    "service_worker": "background.js",
-    "type": "module"
+    "service_worker": "focus/background.js"
   },
   "content_scripts": [
     {
-      "matches": ["*://www.youtube.com/*", "*://m.youtube.com/*"],
-      "js": ["content.js"],
-      "css": ["content.css"],
+      "matches": [
+        "file:///*"
+      ],
+      "js": [
+        "dist/editor-detector.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": false
+    },
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*",
+        "file:///*"
+      ],
+      "js": [
+        "dist/json-detector.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": false
+    },
+    {
+      "matches": [
+        "*://www.youtube.com/*",
+        "*://m.youtube.com/*",
+        "*://music.youtube.com/*"
+      ],
+      "js": [
+        "dist/content-language.js",
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
       "run_at": "document_idle"
     },
     {
-      "matches": ["*://www.youtube.com/*", "*://m.youtube.com/*"],
-      "js": ["nonstop.js"],
+      "matches": [
+        "*://www.youtube.com/*",
+        "*://m.youtube.com/*",
+        "*://music.youtube.com/*"
+      ],
+      "js": [
+        "nonstop.js"
+      ],
       "run_at": "document_idle",
       "world": "MAIN"
     },
@@ -41,17 +98,78 @@
         "https://notebooklm.google.com/*",
         "https://*.notebooklm.google.com/*"
       ],
-      "js": ["content-notebook.js"],
-      "css": ["content-notebook.css"],
+      "js": [
+        "dist/content-language.js",
+        "content-notebook.js"
+      ],
+      "css": [
+        "content-notebook.css"
+      ],
       "run_at": "document_start"
     },
     {
-      "matches": ["http://*/*", "https://*/*"],
-      "js": ["content-altscroll.js"],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "content-altscroll.js"
+      ],
       "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "*://*.facebook.com/*"
+      ],
+      "js": [
+        "dist/content-language.js",
+        "focus/healthy-feed-core.js",
+        "focus/facebook-feed.js"
+      ],
+      "css": [
+        "focus/facebook-feed.css"
+      ],
+      "run_at": "document_start",
+      "all_frames": false
+    },
+    {
+      "matches": [
+        "*://*.youtube.com/*"
+      ],
+      "js": [
+        "focus/content.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": false
     }
   ],
   "declarative_net_request": {
     "rule_resources": []
+  },
+  "options_page": "focus/options.html",
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "focus/blocked.html",
+        "focus/blocked.css",
+        "focus/blocked.js"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    },
+    {
+      "resources": [
+        "editor/editor.html"
+      ],
+      "matches": [
+        "file:///*"
+      ]
+    }
+  ],
+  "externally_connectable": {
+    "ids": [
+      "lbnijnbomgbpkdjehldjhpdclmpifkkc"
+    ]
   }
 }

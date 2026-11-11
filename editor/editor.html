@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Local Text Editor</title>
+  <link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="git-dialog.css">
+  <link rel="stylesheet" href="monaco/entry.css">
+  <link rel="stylesheet" href="terminal/xterm.css">
+  <script src="dropdown.js" defer></script>
+  <script src="material-icon-map.js" defer></script>
+  <script src="monaco/entry.js" defer></script>
+  <script src="terminal/xterm.js" defer></script>
+  <script src="editor.js" defer></script>
+  <script src="native-files.js" defer></script>
+  <script src="git-dialog.js" defer></script>
+  <script src="source-control.js" defer></script>
+  <script src="workspace.js" defer></script>
+  <script src="file-sync.js" defer></script>
+  <script src="terminal/terminal.js" defer></script>
+  <script src="dinside-context-bridge.js" defer></script>
+  <script src="dinside-page-runtime.js" defer></script>
+</head>
+<body>
+  <div class="app">
+    <header class="toolbar">
+      <div class="file-info">
+        <div class="file-menu">
+          <button id="file-menu-btn" class="file-menu-trigger" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="file-menu-options">File<span class="file-menu-arrow" aria-hidden="true"></span></button>
+          <div id="file-menu-options" class="file-menu-options" role="menu" hidden>
+            <button id="open-btn" type="button" role="menuitem">Mở file <span>Ctrl+O</span></button>
+            <button id="save-btn" type="button" role="menuitem" disabled>Lưu <span>Ctrl+S</span></button>
+          </div>
+        </div>
+        <div class="file-menu edit-top-menu">
+          <button id="edit-menu-btn" class="file-menu-trigger" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="edit-menu-options">Edit<span class="file-menu-arrow" aria-hidden="true"></span></button>
+          <div id="edit-menu-options" class="file-menu-options" role="menu" hidden>
+            <button type="button" role="menuitem" data-edit-action="undo"><span class="edit-label">Hoàn tác</span><span>Ctrl+Z</span></button>
+            <button type="button" role="menuitem" data-edit-action="redo"><span class="edit-label">Làm lại</span><span>Ctrl+Y</span></button>
+            <div class="menu-divider" role="separator"></div>
+            <button type="button" role="menuitem" data-edit-action="cut"><span class="edit-label">Cắt</span><span>Ctrl+X</span></button>
+            <button type="button" role="menuitem" data-edit-action="copy"><span class="edit-label">Sao chép</span><span>Ctrl+C</span></button>
+            <button type="button" role="menuitem" data-edit-action="paste"><span class="edit-label">Dán</span><span>Ctrl+V</span></button>
+            <div class="menu-divider" role="separator"></div>
+            <button type="button" role="menuitem" data-edit-action="find"><span class="edit-label">Tìm</span><span>Ctrl+F</span></button>
+            <button type="button" role="menuitem" data-edit-action="replace"><span class="edit-label">Thay thế</span><span>Ctrl+H</span></button>
+            <div class="menu-divider" role="separator"></div>
+            <button type="button" role="menuitem" data-edit-action="comment"><span class="edit-label">Comment dòng</span><span>Ctrl+/</span></button>
+            <button type="button" role="menuitem" data-edit-action="blockComment"><span class="edit-label">Comment khối</span><span>Shift+Alt+A</span></button>
+          </div>
+        </div>
+        <div class="file-menu terminal-top-menu">
+          <button id="terminal-menu-btn" class="file-menu-trigger" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="terminal-top-options">Terminal<span class="file-menu-arrow" aria-hidden="true"></span></button>
+          <div id="terminal-top-options" class="file-menu-options" role="menu" hidden>
+            <button id="terminal-top-open" type="button" role="menuitem">Mở terminal</button>
+            <button id="terminal-top-new" type="button" role="menuitem">Terminal mới</button>
+            <button id="terminal-top-split" type="button" role="menuitem">Chia terminal</button>
+          </div>
+        </div>
+        <div class="file-menu workspace-top-menu">
+          <button id="workspace-menu-btn" class="file-menu-trigger" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="workspace-menu-options">Workspace<span class="file-menu-arrow" aria-hidden="true"></span></button>
+          <div id="workspace-menu-options" class="file-menu-options" role="menu" hidden>
+            <button id="workspace-new" type="button" role="menuitem">Workspace mới…</button>
+            <button id="workspace-open" type="button" role="menuitem">Mở workspace…</button>
+            <button id="workspace-rename" type="button" role="menuitem">Đổi tên workspace…</button>
+            <div class="menu-divider" role="separator"></div>
+            <button id="workspace-add-folder" type="button" role="menuitem">Thêm thư mục vào workspace…</button>
+            <button id="workspace-save" type="button" role="menuitem">Lưu workspace</button>
+          </div>
+        </div>
+        <div id="file-path" class="file-path" title="File đang mở" hidden>Chưa mở file</div>
+      </div>
+    </header>
+    <div id="notice" class="notice" hidden></div>
+    <div id="file-change-notice" class="file-change-notice" role="status" hidden><span id="file-change-message"></span><button id="file-change-review" class="button secondary" type="button">So sánh và xử lý</button><button id="file-change-retry" class="button secondary" type="button">Kiểm tra lại</button></div>
+    <div class="workspace">
+    <nav class="activity-bar" aria-label="Thanh bên">
+      <button id="explorer-toggle" class="activity-button" type="button" aria-label="Explorer" title="Explorer" aria-expanded="true" aria-controls="explorer-panel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l5 5v14H6z M14 2v5h5 M3 6v16h13"/></svg></button>
+      <button id="settings-btn" class="activity-button settings-button" type="button" aria-label="Cài đặt" title="Cài đặt" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 1.72l-.13.9a8.2 8.2 0 0 0-1.67.97l-.83-.36a2 2 0 0 0-2.48.83l-.22.38a2 2 0 0 0 .52 2.56l.7.55a8.5 8.5 0 0 0 0 1.94l-.7.55a2 2 0 0 0-.52 2.56l.22.38a2 2 0 0 0 2.48.83l.83-.36c.51.4 1.07.73 1.67.97l.13.9a2 2 0 0 0 2 1.72h.44a2 2 0 0 0 2-1.72l.13-.9c.6-.24 1.16-.57 1.67-.97l.83.36a2 2 0 0 0 2.48-.83l.22-.38a2 2 0 0 0-.52-2.56l-.7-.55a8.5 8.5 0 0 0 0-1.94l.7-.55a2 2 0 0 0 .52-2.56l-.22-.38a2 2 0 0 0-2.48-.83l-.83.36a8.2 8.2 0 0 0-1.67-.97l-.13-.9a2 2 0 0 0-2-1.72z"/><circle cx="12" cy="11.03" r="2.7"/></svg></button>
+      <button id="git-toggle" class="activity-button" type="button" aria-label="Source Control" title="Source Control" aria-expanded="false" aria-controls="git-panel"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="4" r="2"/><circle cx="6" cy="20" r="2"/><circle cx="18" cy="5" r="2"/><path d="M6 6v12M18 7v3c0 5-12 2-12 8"/></svg><span id="git-badge" hidden></span></button>
+    </nav>
+    <aside id="explorer-panel" class="explorer-panel" aria-label="Explorer">
+      <div class="explorer-header">EXPLORER <button id="open-folder" type="button" title="Mở thư mục" aria-label="Mở thư mục"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div>
+      <div id="explorer-content" class="explorer-content"><p id="explorer-empty">Chưa mở thư mục</p><button id="explorer-open-folder" class="button secondary" type="button">Mở thư mục</button></div>
+    </aside>
+    <div id="explorer-splitter" class="explorer-splitter" role="separator" aria-orientation="vertical" aria-label="Điều chỉnh độ rộng Explorer" aria-controls="explorer-panel" tabindex="0"></div>
+    <aside id="git-panel" class="git-panel" aria-label="Source Control" hidden>
+      <div class="explorer-header"><span>Source Control</span><div class="git-tools"><button id="git-add" type="button" title="Chọn repository" aria-label="Chọn repository"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button><button id="git-refresh" type="button" title="Làm mới" aria-label="Làm mới"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14-5L4 8M4 4v4h4M4 13a8 8 0 0 0 14 5l2-2m0 4v-4h-4"/></svg></button></div></div>
+      <p id="git-status" class="git-status" role="status" aria-live="polite"></p>
+      <div id="git-repositories"></div>
+      <p id="git-hint" class="git-hint"></p>
+      <div id="git-content"></div>
+    </aside>
+    <div class="editor-area">
+    <main id="editor-panel" class="main editor-groups" aria-label="Các nhóm soạn thảo"></main>
+    <section id="terminal-panel" class="terminal-panel" aria-label="Terminal" hidden>
+      <div class="terminal-toolbar">
+        <strong>Terminal</strong><div id="terminal-tabs" class="terminal-tabs" role="tablist" aria-label="Terminal"></div>
+        <button id="terminal-start" class="button secondary" type="button" hidden>Mở PowerShell</button>
+        <div class="terminal-tools">
+          <button id="terminal-new" class="terminal-icon-button" type="button" aria-label="Terminal mới" title="Terminal mới"><svg viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></svg></button>
+          <button id="terminal-split" class="terminal-icon-button" type="button" aria-label="Chia terminal" title="Chia terminal" aria-pressed="false"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/></svg></button>
+          <button id="terminal-kill" class="terminal-icon-button" type="button" aria-label="Xóa terminal" title="Xóa terminal"><svg viewBox="0 0 24 24"><path d="M4 6h16M9 6V4h6v2M7 6l1 14h8l1-14M10 9v8M14 9v8"/></svg></button>
+          <div class="terminal-more-wrap"><button id="terminal-more" class="terminal-icon-button" type="button" aria-label="Tùy chọn terminal" title="Tùy chọn terminal" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></button><div id="terminal-menu" class="tab-context-menu terminal-menu" role="menu" hidden><button id="terminal-browse" type="button" role="menuitem">Chọn thư mục</button><button id="terminal-clear" type="button" role="menuitem">Xóa màn hình</button></div></div>
+          <button id="terminal-maximize" class="terminal-icon-button" type="button" aria-label="Phóng to terminal" title="Phóng to terminal" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg></button>
+          <button id="terminal-close" class="terminal-icon-button" type="button" aria-label="Ẩn terminal" title="Ẩn terminal"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+      </div>
+      <div id="terminal-status" class="terminal-status" role="status" aria-live="polite"></div>
+      <div id="terminal-screens" class="terminal-screens"></div>
+    </section>
+    </div>
+    </div>
+    <footer class="footer">
+      <div class="footer-left"><span id="stats">0 dòng · 0 ký tự</span><span id="status" class="status" role="status" aria-live="polite"></span></div>
+      <div class="footer-right">
+        <span id="cursor-status" aria-live="off" hidden></span>
+        <button id="indent-status" class="shortcuts-btn" type="button" aria-haspopup="dialog" hidden></button>
+        <label class="wrap-label"><input id="autosave-toggle" type="checkbox" checked> Tự động lưu</label>
+        <label class="wrap-label"><input id="wrap-toggle" type="checkbox"> Xuống dòng tự động</label>
+        <span>UTF-8</span>
+        <button id="shortcuts-btn" class="shortcuts-btn" type="button">Phím tắt</button>
+      </div>
+    </footer>
+  </div>
+  <template id="editor-group-template">
+    <section class="editor-group" aria-label="Nhóm soạn thảo">
+      <div class="editor-group-header editor-tabs-bar">
+        <div class="editor-tabs" role="tablist" aria-label="Các file đang mở"></div>
+        <button class="editor-split" data-editor-split type="button" aria-label="Chia trình soạn thảo sang phải" title="Chia trình soạn thảo sang phải"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/></svg></button>
+        <button class="editor-more" data-editor-more type="button" aria-label="Tùy chọn tab" title="Tùy chọn tab" aria-haspopup="menu" aria-expanded="false" aria-controls="editor-more-menu">•••</button>
+        <button class="editor-split" data-editor-close-group type="button" aria-label="Đóng nhóm editor" title="Đóng nhóm editor"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </div>
+      <div class="editor-group-body" role="tabpanel" aria-label="Nội dung file">
+        <div class="monaco-container"></div>
+        <div class="image-preview" hidden><img alt=""><div class="image-preview-unavailable" hidden></div></div>
+        <div class="editor-placeholder">Nhấn Mở file để chọn một file…</div>
+      </div>
+    </section>
+  </template>
+  <div id="editor-more-menu" class="tab-context-menu editor-more-menu" role="menu" hidden>
+    <button id="editor-list" type="button" role="menuitem">File đang mở</button>
+    <div id="editor-list-items" class="editor-list-items" hidden></div>
+    <div class="menu-divider" role="separator"></div>
+    <button id="editor-close-all" type="button" role="menuitem">Đóng tất cả</button>
+    <button id="editor-close-saved" type="button" role="menuitem">Đóng file đã lưu</button>
+    <div class="menu-divider" role="separator"></div>
+    <button id="editor-preview" type="button" role="menuitemcheckbox" aria-checked="false"><span class="preview-check" aria-hidden="true"></span><span id="editor-preview-label">Bật tab xem trước</span></button>
+    <div class="menu-divider" role="separator"></div>
+    <button id="editor-configure" type="button" role="menuitem">Cài đặt trình soạn thảo</button>
+  </div>
+  <div id="tab-context-menu" class="tab-context-menu" role="menu" hidden>
+    <button id="tab-context-close" type="button" role="menuitem">Đóng</button>
+    <button id="tab-context-close-all" type="button" role="menuitem">Đóng tất cả</button>
+  </div>
+  <div id="tree-context-menu" class="tab-context-menu" role="menu" hidden>
+    <button id="tree-new-file" type="button" role="menuitem">Tạo file</button>
+    <button id="tree-new-folder" type="button" role="menuitem">Tạo thư mục</button>
+    <button id="tree-copy-path" type="button" role="menuitem">Sao chép đường dẫn tương đối</button>
+    <button id="tree-copy-absolute" type="button" role="menuitem">Sao chép đường dẫn tuyệt đối</button>
+    <button id="tree-rename" type="button" role="menuitem"><span class="tree-menu-label">Đổi tên</span><span class="tree-menu-key">F2</span></button>
+    <button id="tree-cut" type="button" role="menuitem"><span class="tree-menu-label">Cắt</span><span class="tree-menu-key">Ctrl+X</span></button>
+    <button id="tree-paste" type="button" role="menuitem"><span class="tree-menu-label">Dán</span><span class="tree-menu-key">Ctrl+V</span></button>
+    <button id="tree-delete" type="button" role="menuitem"><span class="tree-menu-label">Xóa</span><span class="tree-menu-key">Del</span></button>
+    <div id="tree-workspace-separator" class="context-menu-separator" role="separator" hidden></div>
+    <button id="tree-add-folder" type="button" role="menuitem">Thêm thư mục vào workspace…</button>
+    <button id="tree-folder-settings" type="button" role="menuitem" hidden>Mở cài đặt thư mục</button>
+    <button id="tree-remove-root" type="button" role="menuitem" hidden>Gỡ thư mục khỏi workspace</button>
+  </div>
+  <dialog id="shortcuts-dialog" aria-labelledby="shortcuts-title">
+    <h2 id="shortcuts-title">Phím tắt</h2>
+    <p class="shortcuts-description">Các thao tác nhanh trong trình soạn thảo</p>
+    <dl>
+      <dt>Ctrl + X / C</dt><dd>Cắt / sao chép dòng khi không chọn chữ</dd>
+      <dt>Alt + ↑ / ↓</dt><dd>Di chuyển dòng hoặc các dòng đã chọn</dd>
+      <dt>Shift + Alt + ↑ / ↓</dt><dd>Nhân bản dòng hoặc các dòng đã chọn</dd>
+      <dt>Ctrl + Shift + K</dt><dd>Xóa dòng</dd>
+      <dt>Ctrl + Enter</dt><dd>Chèn dòng bên dưới</dd>
+      <dt>Ctrl + Shift + Enter</dt><dd>Chèn dòng bên trên</dd>
+      <dt>Tab / Shift + Tab</dt><dd>Thụt lề / giảm thụt lề</dd>
+      <dt>Ctrl + ] / [</dt><dd>Thụt lề / giảm thụt lề dòng</dd>
+      <dt>Ctrl + /</dt><dd>Bật / tắt comment dòng</dd>
+      <dt>Alt + Z</dt><dd>Bật hoặc tắt tự động xuống dòng</dd>
+      <dt>Ctrl + O / S</dt><dd>Mở / lưu file</dd>
+    </dl>
+    <div class="shortcuts-actions"><button id="shortcuts-close" class="button secondary" type="button">Đóng</button></div>
+  </dialog>
+  <dialog id="file-conflict-dialog" class="file-conflict-dialog" aria-labelledby="file-conflict-title" aria-describedby="file-conflict-description">
+    <div class="file-conflict-header"><h2 id="file-conflict-title"></h2><p id="file-conflict-description"></p></div>
+    <div id="file-conflict-labels" class="file-conflict-labels"></div>
+    <div id="file-conflict-editor"></div>
+    <div class="file-conflict-actions"><button id="file-conflict-cancel" class="button secondary" type="button">Tiếp tục sửa</button><button id="file-conflict-disk" class="button secondary" type="button">Dùng bản trên ổ đĩa</button><button id="file-conflict-local" class="button primary" type="button">Lưu bản trong editor</button></div>
+  </dialog>
+  <dialog id="git-diff-dialog" class="git-diff-dialog" aria-labelledby="git-diff-title">
+    <div class="git-diff-header"><strong id="git-diff-title"></strong><button id="git-diff-close" class="button secondary" type="button">Đóng</button></div>
+    <div id="git-diff-labels"></div>
+    <div id="git-diff-editor"></div>
+  </dialog>
+  <dialog id="settings-dialog" class="settings-dialog" aria-labelledby="settings-title">
+    <h2 id="settings-title">Cài đặt</h2>
+    <div class="settings-selects">
+      <div class="theme-menu">
+        <button id="language-select" class="theme-trigger" type="button" aria-labelledby="language-label language-value" aria-haspopup="listbox" aria-expanded="false" aria-controls="language-options"><span class="theme-label" id="language-label">Ngôn ngữ</span><span id="language-value">Tiếng Việt</span><span class="theme-arrow" aria-hidden="true"></span></button>
+        <div id="language-options" class="theme-options" role="listbox" aria-labelledby="language-label" hidden>
+          <button type="button" role="option" data-value="vi" aria-selected="true">Tiếng Việt</button>
+          <button type="button" role="option" data-value="en" aria-selected="false">English</button>
+        </div>
+      </div>
+      <div class="theme-menu">
+        <button id="theme-select" class="theme-trigger" type="button" aria-labelledby="theme-label theme-value" aria-haspopup="listbox" aria-expanded="false" aria-controls="theme-options"><span class="theme-label" id="theme-label">Giao diện</span><span id="theme-value">Tự động</span><span class="theme-arrow" aria-hidden="true"></span></button>
+        <div id="theme-options" class="theme-options" role="listbox" aria-labelledby="theme-label" hidden>
+          <button type="button" role="option" data-value="auto" aria-selected="true">Tự động</button>
+          <button type="button" role="option" data-value="light" aria-selected="false">Sáng</button>
+          <button type="button" role="option" data-value="dark" aria-selected="false">Tối</button>
+        </div>
+      </div>
+    </div>
+    <div class="settings-selects">
+      <div class="theme-menu cursor-blinking-menu">
+        <button id="cursor-blinking-select" class="theme-trigger" type="button" aria-labelledby="cursor-blinking-label cursor-blinking-value" aria-describedby="cursor-blinking-description" aria-haspopup="listbox" aria-expanded="false" aria-controls="cursor-blinking-options"><span class="theme-label" id="cursor-blinking-label">Nhấp nháy con trỏ</span><span id="cursor-blinking-value">blink (mặc định)</span><span class="theme-arrow" aria-hidden="true"></span></button>
+        <div id="cursor-blinking-options" class="theme-options" role="listbox" aria-labelledby="cursor-blinking-label" hidden>
+          <button type="button" role="option" data-value="blink" aria-selected="true">blink (mặc định)</button>
+          <button type="button" role="option" data-value="smooth" aria-selected="false">smooth</button>
+          <button type="button" role="option" data-value="phase" aria-selected="false">phase</button>
+          <button type="button" role="option" data-value="expand" aria-selected="false">expand</button>
+          <button type="button" role="option" data-value="solid" aria-selected="false">solid</button>
+        </div>
+      </div>
+    </div>
+    <p id="cursor-blinking-description" class="create-location-label">Kiểu chuyển động của con trỏ khi soạn thảo.</p>
+    <label class="wrap-label settings-option"><input id="settings-autosave" type="checkbox"><span id="settings-autosave-label">Tự động lưu</span></label>
+    <label class="wrap-label settings-option"><input id="settings-wrap" type="checkbox"><span id="settings-wrap-label">Xuống dòng tự động</span></label>
+    <label class="wrap-label settings-option"><input id="settings-tabs" type="checkbox" checked><span id="settings-tabs-label">Mở nhiều tab</span></label>
+    <button id="settings-shortcuts" class="button secondary" type="button">Phím tắt</button>
+    <div class="shortcuts-actions"><button id="settings-close" class="button secondary" type="button">Đóng</button></div>
+  </dialog>
+  <dialog id="create-dialog" class="settings-dialog" aria-labelledby="create-title">
+    <form id="create-form">
+      <h2 id="create-title"></h2>
+      <p id="create-location-label" class="create-location-label"></p>
+      <div id="create-location" class="create-location"></div>
+      <label for="create-name" id="create-name-label"></label>
+      <input id="create-name" class="create-name" required autocomplete="off">
+      <p id="create-error" class="create-error" role="alert" hidden></p>
+      <div class="shortcuts-actions create-actions"><button id="create-cancel" class="button secondary" type="button">Hủy</button><button id="create-submit" class="button primary" type="submit">Tạo</button></div>
+    </form>
+  </dialog>
+  <dialog id="delete-dialog" class="settings-dialog" aria-labelledby="delete-title" aria-describedby="delete-description">
+    <h2 id="delete-title">Xóa</h2>
+    <p id="delete-description"></p>
+    <div class="shortcuts-actions create-actions"><button id="delete-cancel" class="button secondary" type="button">Hủy</button><button id="delete-confirm" class="button danger" type="button">Xóa</button></div>
+  </dialog>
+  <dialog id="root-path-dialog" class="settings-dialog" aria-labelledby="root-path-title">
+    <form id="root-path-form">
+      <h2 id="root-path-title">Đường dẫn thư mục gốc</h2>
+      <p id="root-path-description">Chọn lại thư mục gốc đang mở để tự điền và ghi nhớ đường dẫn tuyệt đối.</p>
+      <label id="root-path-label" for="root-path-input">Đường dẫn thư mục gốc</label>
+      <div class="root-path-picker">
+        <input id="root-path-input" class="create-name" required autocomplete="off" placeholder="C:\Projects\my-folder">
+        <button id="root-path-browse" class="button secondary" type="button">Chọn thư mục…</button>
+      </div>
+      <p id="root-path-error" class="create-error" role="alert" hidden></p>
+      <div class="shortcuts-actions create-actions"><button id="root-path-cancel" class="button secondary" type="button">Hủy</button><button id="root-path-submit" class="button primary" type="submit">Lưu và sao chép</button></div>
+    </form>
+  </dialog>
+  <dialog id="rename-dialog" class="settings-dialog" aria-labelledby="rename-title">
+    <form id="rename-form">
+      <h2 id="rename-title">Đổi tên file</h2>
+      <label id="rename-label" for="rename-input">Tên mới</label>
+      <input id="rename-input" class="create-name" required autocomplete="off">
+      <p id="rename-error" class="create-error" role="alert" hidden></p>
+      <div class="shortcuts-actions create-actions"><button id="rename-cancel" class="button secondary" type="button">Hủy</button><button id="rename-submit" class="button primary" type="submit">Đổi tên</button></div>
+    </form>
+  </dialog>
+  <dialog id="indent-dialog" class="settings-dialog" aria-labelledby="indent-title">
+    <form id="indent-form">
+      <h2 id="indent-title">Thụt lề</h2>
+      <label class="indent-choice"><input type="radio" name="indent-type" value="spaces"><span id="indent-spaces-label">Dùng dấu cách</span></label>
+      <label class="indent-choice"><input type="radio" name="indent-type" value="tabs"><span id="indent-tabs-label">Dùng tab</span></label>
+      <label id="indent-size-label" for="indent-size">Kích thước thụt lề</label>
+      <input id="indent-size" class="create-name" type="number" min="1" max="16" step="1" required>
+      <p id="indent-hint" class="create-location-label">Áp dụng cho file đang mở và file mở sau đó; không đổi nội dung hiện có.</p>
+      <div class="shortcuts-actions create-actions"><button id="indent-cancel" class="button secondary" type="button">Hủy</button><button id="indent-save" class="button primary" type="submit">Lưu</button></div>
+    </form>
+  </dialog>
+  <dialog id="workspace-name-dialog" class="settings-dialog" aria-labelledby="workspace-name-title">
+    <form id="workspace-name-form">
+      <h2 id="workspace-name-title">Workspace mới</h2>
+      <label id="workspace-name-label" for="workspace-name-input">Tên workspace</label>
+      <input id="workspace-name-input" class="create-name" maxlength="100" required autocomplete="off">
+      <p id="workspace-name-error" class="create-error" role="alert" hidden></p>
+      <div class="shortcuts-actions create-actions"><button id="workspace-name-cancel" class="button secondary" type="button">Hủy</button><button id="workspace-name-submit" class="button primary" type="submit">Tạo</button></div>
+    </form>
+  </dialog>
+  <dialog id="workspace-open-dialog" class="settings-dialog" aria-labelledby="workspace-open-title">
+    <h2 id="workspace-open-title">Mở workspace</h2>
+    <div id="workspace-list" class="workspace-list"></div>
+    <div class="shortcuts-actions"><button id="workspace-open-close" class="button secondary" type="button">Đóng</button></div>
+  </dialog>
+</body>
+</html>

@@ -28,6 +28,9 @@ function setSettings(patch) {
 }
 
 async function init() {
+  document.getElementById('openFocus').addEventListener('click', () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL('focus/popup.html') });
+  });
   const s = await getSettings();
   
   const toggle = document.getElementById('toggleEnabled');

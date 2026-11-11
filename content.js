@@ -10,28 +10,47 @@ const DEFAULT_SETTINGS = {
 let cachedSettings = { ...DEFAULT_SETTINGS }
 
 // ============ HELPERS ============
-function getSettings() {
-  return new Promise(resolve => {
+// Read once per page. Existing tabs keep this cache when the extension reloads.
+const settingsReady = new Promise(resolve => {
+  try {
+    if (!chrome.runtime?.id) return resolve()
     chrome.storage.sync.get([STORAGE_KEY], res => {
-      resolve({ ...DEFAULT_SETTINGS, ...(res[STORAGE_KEY] || {}) })
+      try {
+        if (!chrome.runtime.lastError && res) {
+          cachedSettings = { ...DEFAULT_SETTINGS, ...(res[STORAGE_KEY] || {}) }
+        }
+      } catch (_) { /* Extension was reloaded before the callback ran. */ }
+      resolve()
     })
-  })
-}
-
-function setSettings(patch) {
-  return new Promise(resolve => {
-    chrome.storage.sync.get([STORAGE_KEY], res => {
-      const merged = { ...DEFAULT_SETTINGS, ...(res[STORAGE_KEY] || {}), ...patch }
-      cachedSettings = merged
-      chrome.storage.sync.set({ [STORAGE_KEY]: merged }, resolve)
-    })
-  })
-}
-
-// Khởi tạo cache từ storage
-getSettings().then(s => {
-  cachedSettings = s
+  } catch (_) { resolve() }
 })
+
+try {
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'sync' && changes[STORAGE_KEY]) {
+      cachedSettings = { ...DEFAULT_SETTINGS, ...(changes[STORAGE_KEY].newValue || {}) }
+    }
+  })
+} catch (_) { /* The old page context may already be invalid. */ }
+
+async function getSettings() {
+  await settingsReady
+  return { ...cachedSettings }
+}
+
+async function setSettings(patch) {
+  await settingsReady
+  cachedSettings = { ...cachedSettings, ...patch }
+  return new Promise(resolve => {
+    try {
+      if (!chrome.runtime?.id) return resolve()
+      chrome.storage.sync.set({ [STORAGE_KEY]: cachedSettings }, () => {
+        try { void chrome.runtime.lastError } catch (_) { /* Context invalidated. */ }
+        resolve()
+      })
+    } catch (_) { resolve() }
+  })
+}
 
 function isShortsUrl(url) {
   try {
@@ -182,22 +201,15 @@ async function handleShortsRedirect() {
 // ============ MESSAGES ============
 chrome.runtime.onMessage.addListener(msg => {
   if (msg?.type === 'HYS_TOGGLE') {
-    setSettings({ enabled: msg.enabled }).then(() => {
-      applySettingsClass()
-      if (msg.enabled) startObserver()
-      else stopObserver()
-    })
+    cachedSettings.enabled = msg.enabled
+    applySettingsClass()
+    if (msg.enabled) startObserver()
+    else stopObserver()
   }
-  if (msg?.type === 'HYS_REDIRECT_MODE') {
-    setSettings({ shortsRedirect: msg.mode })
-  }
+  if (msg?.type === 'HYS_REDIRECT_MODE') cachedSettings.shortsRedirect = msg.mode
   if (msg?.type === 'HYS_SEEK_UPDATE') {
     cachedSettings.customSeekEnabled = msg.customSeekEnabled
     cachedSettings.seekSeconds = msg.seekSeconds
-    setSettings({
-      customSeekEnabled: msg.customSeekEnabled,
-      seekSeconds: msg.seekSeconds
-    })
   }
 })
 
@@ -233,7 +245,7 @@ function showSpeedIndicator(video, speed) {
     player.appendChild(indicator)
   }
 
-  indicator.textContent = `Speed: ${speed.toFixed(1)}x`
+  indicator.textContent = globalThis.dinkitContentLanguage?.t('speedIndicator', { speed: speed.toFixed(1) }) || `Speed: ${speed.toFixed(1)}x`
   indicator.style.opacity = '1'
   indicator.style.transform = 'translate(-50%, 0)'
 
@@ -377,6 +389,7 @@ document.addEventListener('ratechange', e => {
 document.addEventListener('keydown', e => {
   // Bỏ qua nếu sự kiện được giả lập từ chính extension
   if (e.hys_bypassed) return
+  if (!cachedSettings.enabled || e.ctrlKey || e.altKey || e.metaKey) return
 
   const active = document.activeElement
   if (active && (
@@ -478,47 +491,10 @@ document.addEventListener('keydown', e => {
   }
 }, true) // Sử dụng capture phase để chạy trước trình lắng nghe mặc định của YouTube
 
-// ============ CORE: YOUTUBE NONSTOP (AUTO RESUME) ============
-function handleYouTubeNonStop() {
-  console.log('[Hide YouTube Shorts] Khởi tạo bộ lắng nghe NonStop thành công.')
-
-  // Đề phòng khi video bị tạm dừng do hộp thoại xác nhận đang chờ sẵn (chạy ở Isolated World)
-  document.addEventListener('pause', e => {
-    if (e.target.tagName === 'VIDEO') {
-      console.log('[Hide YouTube Shorts] Phát hiện sự kiện video pause.')
-      const video = e.target
-      getSettings().then(settings => {
-        console.log('[Hide YouTube Shorts] Đã đọc settings:', settings)
-        if (!settings.enabled) return
-        setTimeout(() => {
-          const popup = document.querySelector('yt-confirm-dialog-renderer, ytmusic-you-there-renderer')
-          console.log('[Hide YouTube Shorts] Tìm kiếm popup trong DOM:', popup)
-          if (popup) {
-            // Tìm nút confirm trong cả Light DOM lẫn Shadow DOM của Web Component
-            let confirmButton = popup.querySelector('#confirm-button')
-            if (!confirmButton && popup.shadowRoot) {
-              confirmButton = popup.shadowRoot.querySelector('#confirm-button')
-            }
-            console.log('[Hide YouTube Shorts] Tìm thấy nút xác nhận:', confirmButton)
-            if (confirmButton) {
-              console.log('[Hide YouTube Shorts] Đang tự động click nút xác nhận để xem tiếp.')
-              confirmButton.click()
-              video.play().catch(err => {
-                console.log('[Hide YouTube Shorts] Lỗi tự động phát lại:', err)
-              })
-            }
-          }
-        }, 150)
-      })
-    }
-  }, true)
-}
-
 // ============ BOOT ============
 ;(async () => {
   console.log('[Hide YouTube Shorts] Extension đang khởi động...')
   await applySettingsClass()
   await handleShortsRedirect()
   await startObserver()
-  handleYouTubeNonStop()
 })()

@@ -1,0 +1,22 @@
+/* Selectors are scoped to the home feed; navigation and Messenger stay available. */
+html[data-ff-feed-gate] [role="main"],
+html[data-ff-feed-gate] [role="feed"],
+html[data-ff-feed-gate] [data-pagelet^="FeedUnit"],
+html[data-ff-feed-video] [role="main"] {
+  display: none !important;
+}
+html[data-ff-feed-active] [role="feed"] [role="article"]:not([data-ff-post], [data-ff-post] *),
+html[data-ff-feed-active] [data-pagelet^="FeedUnit"]:not([data-ff-post], [data-ff-post] *) {
+  visibility: hidden !important;
+}
+html[data-ff-feed-active] [data-ff-reels-shelf],
+html[data-ff-feed-active] [data-ff-sponsored-shelf],
+html[data-ff-feed-active] [role="main"] [data-pagelet*="Reels" i],
+html[data-ff-feed-active] [role="main"] [aria-label="Reels" i] { display: none !important; }
+html[data-ff-feed-active] li:has(a[href*="/reel/"][href*="s=tab"]),
+html[data-ff-feed-active] li:has(a[href*="/reels/"][href*="s=tab"]) { display: none !important; }
+html[data-ff-feed-active] [role="navigation"] li:has(a[href*="/gaming/play/"]),
+html[data-ff-feed-active] [role="navigation"] li:has(a[href*="/gaming/"][href*="games_video_bookmark"]) { display: none !important; }
+html[data-ff-entertainment-filter] [data-ff-entertainment-item] { display: none !important; }
+[data-ff-post="hidden"] { display: none !important; }
+[data-ff-comments] [data-ff-comment] { display: none !important; }

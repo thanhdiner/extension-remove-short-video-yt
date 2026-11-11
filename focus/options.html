@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Focus Firewall · DinKit</title>
+  <link rel="stylesheet" href="../fonts/roboto.css">
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="header">
+    <div class="header-container">
+      <div><span class="brand-label">DinKit</span><h1 class="main-title">Focus Firewall</h1></div>
+      <span class="sub-title" data-i18n="focusSettings">Cài đặt tập trung</span>
+    </div>
+  </div>
+
+  <nav class="options-nav" aria-label="Nhóm cài đặt">
+    <button type="button" class="nav-button" data-options-page="rules" aria-current="page" data-i18n="rules">Quy tắc</button>
+    <button type="button" class="nav-button" data-options-page="modes" data-i18n="modes">Chế độ</button>
+    <button type="button" class="nav-button" data-options-page="stats" data-i18n="stats">Thống kê</button>
+    <button type="button" class="nav-button" data-options-page="more" data-i18n="more">Khác</button>
+  </nav>
+  <div class="layout-container">
+    <!-- LEFT COLUMN: RULES & SETTINGS -->
+    <div class="col-left">
+      <!-- BLOCKLIST SECTION -->
+      <div class="card">
+        <h2 class="card-title" data-i18n="blocklist">Blocklist</h2>
+        <p class="card-desc" data-i18n="blocklistDesc">Domains or URL paths to block. (e.g. facebook.com, youtube.com/shorts)</p>
+        
+        <div class="input-group">
+          <input type="text" id="blocklist-input" placeholder="e.g. tiktok.com" class="input-text" autocomplete="off">
+          <button id="blocklist-add-btn" class="btn btn-primary" data-i18n="add">Add</button>
+        </div>
+        <div id="blocklist-error" class="error-text" style="display: none;"></div>
+
+        <ul id="blocklist-list" class="rules-list">
+          <!-- Items injected here -->
+        </ul>
+      </div>
+
+      <!-- DAILY LIMITS SECTION -->
+      <div class="card">
+        <h2 class="card-title" data-i18n="dailyLimits">Daily Limits</h2>
+        <p class="card-desc" data-i18n="limitsDesc">Set active browsing limits per domain.</p>
+        
+        <div class="input-group">
+          <input type="text" id="limit-domain-input" placeholder="e.g. youtube.com" class="input-text input-half" autocomplete="off">
+          <input type="number" id="limit-time-input" data-i18n-placeholder="minutesPlaceholder" placeholder="Minutes" class="input-text input-half" min="1">
+          <button id="limit-set-btn" class="btn btn-primary" data-i18n="set">Set</button>
+        </div>
+        <div id="limits-error" class="error-text" style="display: none;"></div>
+
+        <ul id="limits-list" class="rules-list">
+          <!-- Items injected here -->
+        </ul>
+      </div>
+
+      <!-- SMART PRESETS SECTION -->
+      <div class="card">
+        <h2 class="card-title" data-i18n="smartPresets">Smart Presets</h2>
+        
+        <div class="preset-item">
+          <div class="preset-header">
+            <label class="toggle-container">
+              <input type="checkbox" id="preset-youtube-cb">
+              <span class="checkmark"></span>
+            </label>
+            <span class="preset-name" data-i18n="youtubeMode">YouTube Learning Mode</span>
+          </div>
+          <div class="preset-details">
+            Blocks Shorts and trending tabs. Hides recommendation shelves, sidebar suggestions, and watch page comments. Disables autoplay.
+          </div>
+        </div>
+
+        <div class="preset-item">
+          <div class="preset-header">
+            <label class="toggle-container">
+              <input type="checkbox" id="preset-social-cb">
+              <span class="checkmark"></span>
+            </label>
+            <span class="preset-name" data-i18n="socialBlock">Social Hard Block</span>
+          </div>
+          <div class="preset-details">
+            Hard blocks Facebook, Instagram, TikTok, and X/Twitter.
+          </div>
+        </div>
+
+        <div class="preset-item">
+          <div class="preset-header">
+            <label class="toggle-container">
+              <input type="checkbox" id="preset-reddit-cb">
+              <span class="checkmark"></span>
+            </label>
+            <span class="preset-name" data-i18n="redditMode">Reddit Research Mode</span>
+          </div>
+          <div class="preset-details">
+            Blocks popular feed, all feed, and search. Allows only whitelisted subreddits.
+          </div>
+          <div id="reddit-whitelist-section" class="nested-section" style="display: none;">
+            <div class="label" data-i18n="redditWhitelist">Whitelisted Subreddits (comma separated)</div>
+            <div class="input-group">
+              <input type="text" id="reddit-whitelist-input" placeholder="e.g. learnprogramming, rust" class="input-text" autocomplete="off">
+              <button id="reddit-whitelist-save-btn" class="btn btn-primary" data-i18n="save">Save</button>
+            </div>
+            <div id="reddit-whitelist-feedback" class="success-text" style="display: none;" data-i18n="whitelistSaved">Saved whitelist.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card healthy-feed-card">
+        <div class="feed-title-row"><h2 class="card-title">Facebook · Healthy Feed</h2><span id="feed-help-mui"></span></div>
+        <div id="feed-options-mui"></div>
+        <select id="feed-mode" class="native-feed-mode" aria-hidden="true" tabindex="-1">
+          <option value="information">Information</option><option value="social">Social</option><option value="unrestricted">Unrestricted</option>
+        </select>
+        <select id="feed-max-posts" class="native-feed-mode" aria-hidden="true" tabindex="-1">
+          <option value="20">20</option><option value="25">25</option><option value="30">30</option>
+        </select>
+        <div class="feed-topic-controls">
+          <input id="feed-more-topics" type="hidden" />
+          <input id="feed-less-topics" type="hidden" />
+          <div id="feed-topics-mui"></div>
+          <button id="feed-save-topics" class="btn btn-primary" type="button" data-i18n="saveTopics">Lưu chủ đề</button>
+          <p id="feed-topics-status" role="status" aria-live="polite"></p>
+        </div>
+        <p id="feed-status" role="status" aria-live="polite"></p>
+        <p id="feed-warning" class="error-text" role="alert" hidden></p>
+        <button id="feed-start" class="btn btn-primary" data-i18n="readUpdates">Đọc cập nhật — 15 phút</button>
+        <details>
+          <summary>Nguồn đã chọn</summary>
+          <p class="card-desc">Dùng Ưu tiên nguồn / Ẩn nguồn / Chặn nguồn trên bài viết. Ưu tiên cho nguồn vượt qua lọc nội dung thường, nhưng vẫn ẩn quảng cáo, Reels và bài gợi ý; Ẩn nguồn chỉ áp dụng cho Information; Chặn nguồn áp dụng cho cả Information và Social.</p>
+          <ul id="feed-sources" class="rules-list"></ul>
+        </details>
+      </div>
+
+      <!-- EMERGENCY UNLOCK -->
+      <div class="card border-yellow">
+        <h2 class="card-title text-yellow" data-i18n="unlock">Mở khóa khẩn cấp</h2>
+        <p class="card-desc" data-i18n="unlockDesc">Mở tạm một trang trong 5 phút, tối đa một lần mỗi ngày.</p>
+        
+        <div id="unlock-form-container">
+          <div class="input-group-vertical">
+            <input type="text" id="unlock-domain-input" data-i18n-placeholder="unlockDomainPlaceholder" placeholder="Ví dụ: facebook.com" class="input-text" autocomplete="off">
+            <input type="text" id="unlock-reason-input" data-i18n-placeholder="unlockReasonPlaceholder" placeholder="Lý do mở khóa" class="input-text" autocomplete="off">
+            <button id="unlock-trigger-btn" class="btn btn-yellow" data-i18n="unlockButton">Mở khóa 5 phút</button>
+          </div>
+          <div id="unlock-error" class="error-text" style="display: none;"></div>
+        </div>
+
+        <div id="unlock-active-container" class="unlock-active-box" style="display: none;">
+          <div><span data-i18n="activeUnlock">Active Unlock:</span> <span id="active-unlock-domain" class="font-bold">-</span></div>
+          <div><span data-i18n="remaining">Remaining:</span> <span id="active-unlock-timer" class="font-bold">-</span></div>
+        </div>
+      </div>
+
+      <!-- IMPORT / EXPORT SECTION -->
+      <div class="card">
+        <h2 class="card-title" data-i18n="backup">Sao lưu</h2>
+        <p class="card-desc" data-i18n="backupDesc">Sao lưu hoặc khôi phục cài đặt.</p>
+        
+        <div class="input-group">
+          <button id="export-settings-btn" class="btn btn-primary" data-i18n="exportSettings">Xuất cài đặt</button>
+          <button id="import-settings-btn" class="btn btn-primary" data-i18n="importSettings">Nhập cài đặt</button>
+        </div>
+        <input type="file" id="import-file-input" accept=".json" style="display: none;">
+        <div id="import-export-status" class="info-text" style="display: none; text-align: left; margin-top: 8px; font-size: 14px;"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN: ANALYTICS & STATE -->
+    <div class="col-right">
+      <!-- STATED STATUS -->
+      <div class="card">
+        <h2 class="card-title" data-i18n="systemStatus">System Status</h2>
+        <div class="details border-bottom">
+          <span class="label" data-i18n="focusState">Focus State:</span>
+          <span id="focus-status-text" class="value font-bold">-</span>
+        </div>
+        <div class="details">
+          <span class="label" data-i18n="strictMode">Strict Mode:</span>
+          <div class="details-right">
+            <label class="toggle-container">
+              <input type="checkbox" id="strict-mode-cb">
+              <span class="checkmark"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- PENDING CHANGES -->
+      <div id="pending-changes-card" class="card border-yellow" style="display: none;">
+        <h2 class="card-title text-yellow" data-i18n="pendingChanges">Pending Changes</h2>
+        <p class="card-desc text-yellow" data-i18n="pendingDesc">Strict mode is active. The following changes will apply tomorrow at midnight:</p>
+        <ul id="pending-changes-list" class="pending-list">
+          <!-- Items injected here -->
+        </ul>
+        <button id="clear-pending-btn" class="btn btn-yellow-outline" style="display: none;" data-i18n="clearPending">Clear Pending Changes</button>
+      </div>
+
+      <!-- DAILY ANALYTICS -->
+      <div class="card">
+        <h2 class="card-title" data-i18n="usageStats">Thống kê sử dụng · Usage Statistics</h2>
+        
+        <div class="details border-bottom">
+          <span class="label" data-i18n="wastedTodayFull">Thời gian xao nhãng hôm nay · Wasted Time Today</span>
+          <span id="stat-wasted" class="value font-bold">-</span>
+        </div>
+        <div class="details border-bottom">
+          <span class="label" data-i18n="blockedTodayFull">Lượt truy cập bị chặn hôm nay · Blocked Attempts Today</span>
+          <span id="stat-blocks" class="value font-bold">-</span>
+        </div>
+        <div class="details border-bottom">
+          <span class="label" data-i18n="sessionsDone">Phiên hoàn thành · Sessions Completed</span>
+          <span id="stat-focus-done" class="value font-bold">-</span>
+        </div>
+        <div class="details border-bottom">
+          <span class="label" data-i18n="sessionsFailed">Phiên chưa hoàn thành · Sessions Failed</span>
+          <span id="stat-focus-failed" class="value font-bold">-</span>
+        </div>
+        <div class="details">
+          <span class="label" data-i18n="unlockUsed">Đã mở khóa khẩn cấp hôm nay · Emergency Unlock Used</span>
+          <span id="stat-unlock-used" class="value font-bold">-</span>
+        </div>
+      </div>
+
+      <!-- TOP DOMAINS -->
+      <div class="card">
+        <h2 class="card-title" data-i18n="topDomains">5 trang dùng nhiều nhất hôm nay · Top 5 Domains</h2>
+        <p class="card-desc" data-i18n="usageToday">Thời gian sử dụng hôm nay · Usage today</p>
+        <ul id="top-domains-list" class="top-list">
+          <!-- Items injected here -->
+        </ul>
+      </div>
+
+      <!-- FOCUS HISTORY -->
+      <div class="card">
+        <h2 class="card-title" data-i18n="focusHistory">Lịch sử tập trung · Focus Session Log</h2>
+        <ul id="focus-history-list" class="history-list">
+          <!-- Items injected here -->
+        </ul>
+      </div>
+    </div>
+  </div>
+  <script src="../dist/language-runtime.js"></script>
+  <script src="options-navigation.js"></script>
+  <script src="../dist/options-selects.js"></script>
+  <script src="../dist/options-preset-help.js"></script>
+  <script src="../dist/options-accordions.js"></script>
+  <script src="../dist/options-topics.js"></script>
+  <script src="healthy-feed-core.js"></script>
+  <script src="healthy-feed-ui.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

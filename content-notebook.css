@@ -1,4 +1,7 @@
 /* Prefix all styles with .notebook-optimizer-active to allow toggling from popup settings */
+.notebook-optimizer-active [data-dinkit-notebook-hidden] {
+  display: none !important;
+}
 
 /* Ẩn hẳn thẻ cha chứa tất cả lỗi YouTube */
 .notebook-optimizer-active .ytp-error {

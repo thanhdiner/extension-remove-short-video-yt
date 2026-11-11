@@ -1,0 +1,181 @@
+{
+  "sweeps": [
+    {
+      "count": 18640,
+      "failures": [],
+      "p95": 0.19999999925494194,
+      "max": 4.799999998882413,
+      "viewport": [
+        1100,
+        800
+      ],
+      "scroll": [
+        0,
+        0
+      ]
+    },
+    {
+      "count": 18640,
+      "failures": [],
+      "p95": 0.19999999925494194,
+      "max": 2.200000001117587,
+      "viewport": [
+        356,
+        600
+      ],
+      "scroll": [
+        0,
+        0
+      ]
+    },
+    {
+      "count": 18640,
+      "failures": [],
+      "p95": 0.10000000149011612,
+      "max": 2.199999999254942,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "scroll": [
+        0,
+        0
+      ]
+    },
+    {
+      "count": 18640,
+      "failures": [],
+      "p95": 0.10000000149011612,
+      "max": 2.900000000372529,
+      "viewport": [
+        320,
+        240
+      ],
+      "scroll": [
+        0,
+        0
+      ]
+    },
+    {
+      "count": 18640,
+      "failures": [],
+      "p95": 0.19999999925494194,
+      "max": 5.099999999627471,
+      "viewport": [
+        240,
+        160
+      ],
+      "scroll": [
+        0,
+        0
+      ]
+    },
+    {
+      "count": 18640,
+      "failures": [],
+      "p95": 0.19999999925494194,
+      "max": 4.800000000745058,
+      "viewport": [
+        178,
+        300
+      ],
+      "scroll": [
+        0,
+        0
+      ]
+    },
+    {
+      "count": 18640,
+      "failures": [],
+      "p95": 0.10000000149011612,
+      "max": 3.800000000745058,
+      "viewport": [
+        1100,
+        800
+      ],
+      "scroll": [
+        0,
+        20000
+      ]
+    },
+    {
+      "count": 18640,
+      "failures": [],
+      "p95": 0.10000000149011612,
+      "max": 3.700000001117587,
+      "viewport": [
+        1100,
+        800
+      ],
+      "scroll": [
+        3000,
+        20000
+      ]
+    },
+    {
+      "count": 18640,
+      "failures": [],
+      "p95": 0.10000000149011612,
+      "max": 3.5,
+      "viewport": [
+        1100,
+        800
+      ],
+      "scroll": [
+        0,
+        1000000
+      ]
+    },
+    {
+      "count": 18640,
+      "failures": [],
+      "p95": 0.19999999925494194,
+      "max": 4.099999999627471,
+      "viewport": [
+        240,
+        160
+      ],
+      "scroll": [
+        0,
+        1000000
+      ]
+    },
+    {
+      "count": 18640,
+      "failures": [],
+      "p95": 0.19999999925494194,
+      "max": 2.5,
+      "viewport": [
+        178,
+        300
+      ],
+      "scroll": [
+        0,
+        1000000
+      ]
+    }
+  ],
+  "motion_frames": 420,
+  "screenshots": [
+    "511x330-outside.png",
+    "190x72.png",
+    "117x72.png",
+    "197x143.png",
+    "top-left.png",
+    "small-viewport.png",
+    "long-coordinates.png",
+    "small-and-long.png"
+  ],
+  "zoom_factors": [
+    0.67,
+    0.8,
+    1,
+    1.25,
+    1.5,
+    2
+  ],
+  "seconds": 36.94,
+  "passed": true,
+  "outside_selection_regression": "511x330 at 706,278, forward and reverse; all six labels outside selection",
+  "outside_selection_sweep": "No label intersects selection where the viewport has sufficient margins on all sides."
+}

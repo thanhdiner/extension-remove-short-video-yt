@@ -1,28 +1,26 @@
-(function() {
-  console.log('[Hide YouTube Shorts - NonStop MAIN] Script đã chạy trong Page Context.')
+(function () {
+  // YouTube reuses yt-confirm-dialog-renderer for unrelated actions, including
+  // unsubscribe. Only act on a positively identified inactivity prompt.
+  const inactivityTitles = new Set([
+    'video paused. continue watching?',
+    'video paused. continue watching',
+    'video đã tạm dừng. tiếp tục xem?',
+    'video đã tạm dừng. tiếp tục xem',
+  ])
 
-  // Lắng nghe sự kiện mở popup của YouTube ở Page Context (MAIN World) để lấy e.detail
-  document.addEventListener('yt-popup-opened', e => {
+  document.addEventListener('yt-popup-opened', () => {
     if (document.documentElement.classList.contains('hys-disabled')) return
-
-    console.log('[Hide YouTube Shorts - NonStop MAIN] Phát hiện sự kiện mở popup.')
-    const popup = document.querySelector('yt-confirm-dialog-renderer, ytmusic-you-there-renderer')
-    if (popup) {
-      let confirmButton = popup.querySelector('#confirm-button')
-      if (!confirmButton && popup.shadowRoot) {
-        confirmButton = popup.shadowRoot.querySelector('#confirm-button')
-      }
-      console.log('[Hide YouTube Shorts - NonStop MAIN] Nút xác nhận tìm thấy:', confirmButton)
-      if (confirmButton) {
-        console.log('[Hide YouTube Shorts - NonStop MAIN] Tự động click nút xác nhận.')
-        confirmButton.click()
-        const video = document.querySelector('video')
-        if (video && video.paused) {
-          video.play().catch(() => {})
-        }
-      }
+    for (const popup of document.querySelectorAll('yt-confirm-dialog-renderer, ytmusic-you-there-renderer')) {
+      if (!popup.getClientRects().length) continue
+      const title = popup.querySelector('#title') || popup.shadowRoot?.querySelector('#title')
+      const text = (title?.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase()
+      if (!inactivityTitles.has(text)) continue
+      const confirm = popup.querySelector('#confirm-button') || popup.shadowRoot?.querySelector('#confirm-button')
+      if (!confirm) continue
+      confirm.click()
+      const video = document.querySelector('video')
+      if (video?.paused) video.play().catch(() => {})
+      break
     }
   }, true)
 })()
-
-

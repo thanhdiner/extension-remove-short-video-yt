@@ -1,0 +1,54 @@
+// Isolated workspaceTest tab only. All file reads/writes below are in memory.
+(async () => {
+  if (!new URLSearchParams(location.search).get("workspaceTest")) throw Error("Use isolated test tab");
+  await localWorkspace.ready; localWorkspace.disposed = true;
+  const assert = (ok, name) => { if (!ok) throw Error(name + ": " + currentError); };
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const wait = async predicate => { const until = Date.now() + 6000; while (!predicate()) { if (Date.now() > until) throw Error("Sync timeout: " + currentError); await sleep(20); } };
+  let disk = "base\nsecond line\n", writes = 0, gate = null, missing = false;
+  const handle = { name: "sync.txt", isSameEntry: async other => other === handle, queryPermission: async () => "granted",
+    getFile: async () => { if (missing) throw new DOMException("Missing fixture", "NotFoundError"); const bytes = new TextEncoder().encode(disk); if (gate) await gate; return { arrayBuffer: async () => bytes.buffer }; },
+    createWritable: async () => ({ write: async bytes => { disk = new TextDecoder("utf-8", { ignoreBOM: true }).decode(bytes); writes++; }, close: async () => {}, abort: async () => {} }) };
+  elements.autosave.checked = false;
+  await installContent(new TextEncoder().encode(disk), handle.name, "", handle);
+  splitEditorGroup(); editor.setPosition({ lineNumber: 2, column: 3 });
+  disk = "outside\nsecond line\n"; await localFileSync.scan();
+  assert(editorGroups.every(g => g.editor.getValue() === disk) && !state.dirty, "outside changes update all clean split views");
+  assert(editor.getPosition().lineNumber === 2 && editor.getPosition().column === 3, "cursor preserved");
+  editor.setValue("my draft\n"); disk = "their changes\n"; await localFileSync.scan();
+  assert(localFileSync.isBlocked(activeTab) && state.dirty && editor.getValue() === "my draft\n", "conflict preserves editor draft");
+  assert(!document.getElementById("file-change-notice").hidden && writes === 0, "conflict banner without disk write");
+  await saveFile(true); assert(writes === 0 && !document.getElementById("file-conflict-dialog").open, "auto save pauses without modal");
+  await saveFile(); await saveFile();
+  assert(!document.getElementById("file-conflict-dialog").open && writes === 0 && !document.getElementById("file-change-notice").hidden, "repeated manual saves show only the inline notice");
+  document.getElementById("file-change-review").click();
+  assert(document.getElementById("file-conflict-dialog").open, "comparison opens only on explicit review");
+  assert(document.querySelector("#file-conflict-editor .monaco-diff-editor"), "read-only diff visible");
+  document.getElementById("file-conflict-cancel").click(); await sleep(30);
+  assert(editor.getValue() === "my draft\n" && disk === "their changes\n", "cancel preserves both versions");
+  localFileSync.open();
+  disk = "newer outside\n"; document.getElementById("file-conflict-local").click(); await sleep(50);
+  assert(document.getElementById("file-conflict-dialog").open && writes === 0 && disk === "newer outside\n", "newer disk revision requires another review");
+  document.getElementById("file-conflict-local").click(); await wait(() => writes === 1 && !state.saving);
+  assert(disk === "my draft\n" && !state.dirty && !localFileSync.isBlocked(activeTab), "explicit editor choice saves draft");
+  editor.setValue("draft two\n"); disk = "disk choice\n"; await localFileSync.scan(); localFileSync.open();
+  document.getElementById("file-conflict-disk").click(); await wait(() => !document.getElementById("file-conflict-dialog").open);
+  assert(editor.getValue() === "disk choice\n" && !state.dirty && writes === 1, "explicit disk choice loads without writing");
+  editor.setValue("same on both sides\n"); disk = "same on both sides\n"; await localFileSync.scan();
+  assert(!state.dirty && !localFileSync.isBlocked(activeTab) && writes === 1, "matching outside content resolves without overwrite");
+  editor.setValue("metadata safe draft\n"); disk = "\ufeffsame on both sides\r\n"; await saveFile();
+  assert(disk === "\ufeffmetadata safe draft\r\n" && !state.dirty && writes === 2, "BOM/EOL-only changes are rebased before saving");
+  let release; gate = new Promise(resolve => release = resolve);
+  disk = "outside during read\n"; const reading = localFileSync.scan(); await sleep(30); editor.setValue("typed during read\n"); gate = null; release(); await reading;
+  assert(editor.getValue() === "typed during read\n", "in-flight read never overwrites newer typing");
+  await localFileSync.scan(); assert(localFileSync.isBlocked(activeTab), "next scan detects race as conflict");
+  disk = "\ufeffmetadata safe draft\r\n"; elements.autosave.checked = true;
+  await localFileSync.scan(); await wait(() => writes === 3 && !state.saving);
+  assert(disk === "\ufefftyped during read\r\n" && !state.dirty, "auto save resumes if outside changes revert to baseline");
+  elements.autosave.checked = false; missing = true; await localFileSync.scan();
+  assert(localFileSync.isBlocked(activeTab) && !document.getElementById("file-change-retry").hidden && editor.getValue() === "typed during read\n", "missing file keeps content and offers retry");
+  missing = false; await localFileSync.scan();
+  assert(!localFileSync.isBlocked(activeTab), "restored file access clears retry banner");
+  localFileSync.stop();
+  return { passed: true, splitViews: editorGroups.length, writes, conflictChoices: 2, protectsConcurrentChanges: true };
+})();

@@ -1,0 +1,20 @@
+body { margin: 0; width: 100%; font-family: Roboto, sans-serif; }
+.popup-container { padding: 16px; box-sizing: border-box; }
+.focus-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; }
+.focus-header .focus-title { font-weight: 600; }
+.focus-section { padding: 10px 0; }
+.focus-details { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.focus-stats { display: flex; gap: 16px; padding-top: 8px; padding-bottom: 12px; }
+.focus-stats > div { flex: 1; }
+.focus-info, .focus-error { margin: 8px 0 !important; display: block; }
+.focus-info:empty { display: none; }
+.focus-error[hidden] { display: none; }
+#focus-root #feed-start[hidden] { display: none; }
+.native-feed-mode { display: none; }
+body.embedded .popup-container { padding: 0; }
+body.embedded .focus-header .focus-title { display: none; }
+body.embedded .focus-header { justify-content: flex-end; padding: 0; }
+body.embedded .focus-header:has(#status-badge:not(.badge-on)) { display: none; }
+#feed-start:disabled { opacity: .4; }
+#open-rules-btn { margin-top: 4px; }
+#status-badge.badge-on { color: #81c784; border-color: #81c784; }

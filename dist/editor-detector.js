@@ -1,0 +1,1 @@
+(()=>{function e(o){try{let t=new URL(o);return t.protocol==="file:"&&decodeURIComponent(t.pathname).toLowerCase().endsWith(".txt")}catch{return!1}}if(window.top===window&&e(location.href)&&document.contentType==="text/plain")try{location.replace(`${chrome.runtime.getURL("editor/editor.html")}?file=${encodeURIComponent(location.href)}`)}catch{}})();

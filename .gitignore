@@ -1,0 +1,3 @@
+node_modules/
+editor/terminal-host/launch.cmd
+editor/terminal-host/native-host.json

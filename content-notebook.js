@@ -3,6 +3,12 @@
 
   let enabled = false;
   let observer = null;
+  function hideElement(element) {
+    // Scoped CSS restores the site's own styles when this feature is disabled.
+    if (element && element !== document.body && element !== document.documentElement) {
+      element.setAttribute('data-dinkit-notebook-hidden', '');
+    }
+  }
 
   function hideYouTubeErrors() {
     if (!enabled) return;
@@ -10,18 +16,18 @@
     // Tìm và ẩn thẻ cha .ytp-error (chứa tất cả lỗi bên trong)
     const errorElements = document.querySelectorAll('.ytp-error');
     errorElements.forEach(element => {
-      element.style.display = 'none';
+      hideElement(element);
       
       // Ẩn hẳn video player chứa lỗi này
       const player = element.closest('.html5-video-player');
       if (player) {
-        player.style.display = 'none';
+        hideElement(player);
       }
       
       // Ẩn iframe YouTube chứa lỗi
       const iframe = element.closest('iframe');
       if (iframe && (iframe.src.includes('youtube.com') || iframe.src.includes('youtube-nocookie.com'))) {
-        iframe.style.display = 'none';
+        hideElement(iframe);
       }
     });
     
@@ -29,67 +35,67 @@
     const youtubeIframes = document.querySelectorAll('iframe[src*="youtube.com"], iframe[src*="youtube-nocookie.com"]');
     youtubeIframes.forEach(iframe => {
       // Đánh dấu iframe bị lỗi
-      iframe.classList.add('youtube-error');
-      iframe.style.display = 'none';
+      hideElement(iframe);
       
       // Ẩn container chứa iframe
       const container = iframe.closest('.youtube-container');
       if (container) {
-        container.classList.add('hidden-video');
-        container.style.display = 'none';
+        hideElement(container);
       }
       
       // Ẩn div wrapper trực tiếp
       const wrapper = iframe.parentElement;
       if (wrapper) {
-        wrapper.style.display = 'none';
+        hideElement(wrapper);
       }
     });
     
     // Ẩn Source guide container
     const sourceGuides = document.querySelectorAll('.source-guide-container');
     sourceGuides.forEach(guide => {
-      guide.style.display = 'none';
+      hideElement(guide);
     });
     
     // Thêm nút copy cho elements-container
     const elementsContainers = document.querySelectorAll('.elements-container');
     elementsContainers.forEach(container => {
       // Kiểm tra xem đã có nút copy chưa
-      if (!container.querySelector('.copy-button')) {
+      if (!container.querySelector(':scope > .copy-button')) {
         // Tạo nút copy
         const copyBtn = document.createElement('button');
         copyBtn.className = 'copy-button';
-        copyBtn.textContent = 'Copy';
-        copyBtn.setAttribute('aria-label', 'Copy code');
+        const copyText = key => globalThis.dinkitContentLanguage?.t(key) || ({ copy: 'Copy', copyCode: 'Copy code', copied: 'Copied!', copyFailed: 'Failed' })[key];
+        let copyState = 'copy';
+        const updateCopyLabel = () => { copyBtn.textContent = copyText(copyState); copyBtn.setAttribute('aria-label', copyText('copyCode')); };
+        updateCopyLabel();
+        copyBtn.dinkitUnsubscribe = globalThis.dinkitContentLanguage?.subscribe(updateCopyLabel);
         
         // Thêm sự kiện click
         copyBtn.addEventListener('click', function() {
           // Lấy text từ container
-          const text = container.innerText.replace('Copy', '').trim();
+          const text = container.innerText.replace(copyBtn.innerText, '').trim();
           
           // Copy vào clipboard
           navigator.clipboard.writeText(text).then(() => {
             // Thay đổi text nút
-            copyBtn.textContent = 'Copied!';
+            copyState = 'copied'; updateCopyLabel();
             copyBtn.classList.add('copied');
             
             // Trở lại sau 2 giây
             setTimeout(() => {
-              copyBtn.textContent = 'Copy';
+              copyState = 'copy'; updateCopyLabel();
               copyBtn.classList.remove('copied');
             }, 2000);
           }).catch(err => {
             console.error('Failed to copy:', err);
-            copyBtn.textContent = 'Failed';
+            copyState = 'copyFailed'; updateCopyLabel();
             setTimeout(() => {
-              copyBtn.textContent = 'Copy';
+              copyState = 'copy'; updateCopyLabel();
             }, 2000);
           });
         });
         
         // Thêm nút vào container
-        container.style.position = 'relative';
         container.insertBefore(copyBtn, container.firstChild);
       }
     });
@@ -132,7 +138,8 @@
 
     // Gỡ nút copy và trả lại style cũ nếu cần
     const copyButtons = document.querySelectorAll('.copy-button');
-    copyButtons.forEach(btn => btn.remove());
+    copyButtons.forEach(btn => { btn.dinkitUnsubscribe?.(); btn.remove(); });
+    document.querySelectorAll('[data-dinkit-notebook-hidden]').forEach(element => element.removeAttribute('data-dinkit-notebook-hidden'));
   }
 
   function init() {
